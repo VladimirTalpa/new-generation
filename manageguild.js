@@ -81,7 +81,7 @@ module.exports=({client,cfg,db})=>{
    return {content:'',embeds:[embed],attachments:[],components,allowedMentions:{parse:[]}};
  };
  async function handle(i){
-   if(i.isChatInputCommand()&&i.commandName==='manageguild'){
+   if(i.isChatInputCommand()&&i.commandName==='guildmanagement'){
      await i.deferReply({ephemeral:true});const allowed=uniqueEntries(i);if(!allowed.length)return i.editReply({content:'Access denied: you need a captain/officer role AND your numbered division role. For a full roster, enable Server Members Intent in Discord Developer Portal.'});
      if(allowed.length===1){await ensureRoster(i.guild);return i.editReply(await render(i,allowed[0]));}
      return i.editReply({content:'You have access to more than one division. Select which one to manage:',components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('mg:division').setPlaceholder('Choose your division').addOptions(allowed.map(e=>({label:(e.g.name+' • '+e.d.name).slice(0,100),value:key(e)}))))],ephemeral:true});
