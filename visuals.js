@@ -89,8 +89,7 @@ const art = async (kind, details={}) => {
     <path d="M91 182 Q111 177 128 184 M174 184 Q194 177 211 182" stroke="#30252a" stroke-width="5" fill="none"/>
     <circle cx="112" cy="185" r="6" fill="#211c22"/><circle cx="192" cy="185" r="6" fill="#211c22"/>
     <path d="M150 182 L139 214 L156 220" stroke="#98664e" stroke-width="6" fill="none" stroke-linecap="round"/>
-    <path d="M114 241 Q151 230 187 241" stroke="#50312f" stroke-width="6" fill="none" stroke-linecap="round"/>
-    <path d="M115 253 Q151 266 187 253" stroke="#553c37" stroke-width="5" fill="none"/>
+    <path d="M119 238 Q150 222 183 238 Q185 267 151 276 Q119 268 119 238Z" fill="#4c2026" stroke="#673b36" stroke-width="5"/><path d="M126 239 Q150 235 177 239 L175 248 Q149 251 128 247Z" fill="#f5e3d6"/><path d="M138 267 Q152 260 165 267" stroke="#a94c58" stroke-width="5" fill="none"/>
     <path d="M100 355 L198 355" stroke="#8f7a60" stroke-width="11"/>
     ${textPath('RAMBO',105,390,22,'#e8c9b5','bold',3)}
   </g>`:'';
@@ -105,7 +104,7 @@ const art = async (kind, details={}) => {
   <rect x="40" y="38" width="1020" height="574" rx="24" fill="#120e25" fill-opacity=".45" stroke="#ad67f0" stroke-opacity=".6" stroke-width="2"/>
   <rect x="60" y="62" width="9" height="510" rx="4" fill="url(#line)"/>
   ${textPath('MOHGS',88,128,63,'#ffffff','bold',9)}
-  ${isPanel?'<path d="M740 78H1015" stroke="#b67ce8" stroke-width="2" opacity=".65"/>'+textPath('#MOHGS NR1',748,112,25,'#f5dcff','bold',1.2)+'<path d="M740 127H1015" stroke="#b67ce8" stroke-width="2" opacity=".65"/>':''}
+  ${isPanel?'<path d="M728 63H1034Q1048 63 1048 79V129Q1048 144 1032 144H974L953 169L951 144H728Q713 144 713 129V79Q713 63 728 63Z" fill="#2b183c" stroke="#e7b6ff" stroke-width="3"/>'+textPath('#MOHGS NR1!',737,116,29,'#ffffff','bold',1):''}
   ${textPath(title,88,175,26,'#e3a6f5','bold',4)}
   ${textPath(subtitle,88,212,15,'#baa6d2','regular',4)}
   <path d="M88 229H660" stroke="url(#line)" stroke-width="2"/>${lines}
