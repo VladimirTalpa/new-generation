@@ -4,8 +4,8 @@ module.exports=({client,cfg,db})=>{
  const all=Object.entries(cfg.games).flatMap(([gameKey,g])=>Object.entries(g.divisions).map(([divisionKey,d])=>({gameKey,divisionKey,g,d})));
  const admin=i=>i.memberPermissions?.has(PermissionFlagsBits.Administrator);
  const roles=i=>i.member?.roles?.cache;
+ const memberRoles=async i=>(await i.guild.members.fetch(i.user.id)).roles.cache;
  const permitted=(i,entry)=>{
-   if(admin(i))return true;
    const r=roles(i);if(!r)return false;
    const staff=r.has(entry.d.captainRoleId)||r.has(entry.d.officerRoleId);
    return staff&&r.has(entry.d.divisionRoleId);
@@ -24,7 +24,7 @@ module.exports=({client,cfg,db})=>{
  };
  const nav=(e,page,total)=>new ActionRowBuilder().addComponents(
    new ButtonBuilder().setCustomId('mg:page:'+key(e)+':'+Math.max(0,page-1)).setLabel('Previous').setStyle(ButtonStyle.Secondary).setDisabled(page===0),
-   new ButtonBuilder().setCustomId('mg:page:'+key(e)+':'+Math.min(Math.ceil(total/PAGE)-1,page+1)).setLabel('Next').setStyle(ButtonStyle.Secondary).setDisabled((page+1)*PAGE>=total),
+   new ButtonBuilder().setCustomId('mg:page:'+key(e)+':'+Math.max(0,Math.min(Math.ceil(total/PAGE)-1,page+1))).setLabel('Next').setStyle(ButtonStyle.Secondary).setDisabled((page+1)*PAGE>=total),
    new ButtonBuilder().setCustomId('mg:refresh:'+key(e)+':'+page).setLabel('Refresh').setStyle(ButtonStyle.Secondary)
  );
  const render=async(i,e,page=0)=>{
@@ -33,24 +33,25 @@ module.exports=({client,cfg,db})=>{
    const embed=new EmbedBuilder().setColor(0x9872e7).setTitle('✦ MOHGS | Division Management').setDescription('**'+e.g.name+' — '+e.d.name+'**\n\n'+(shown.length?shown.map((m,j)=>'**'+(page*PAGE+j+1)+'.** <@'+m.id+'> • `'+m.id+'`').join('\n'):'No members with this division role.')).addFields({name:'Members',value:String(members.length),inline:true},{name:'Page',value:(page+1)+' / '+Math.max(1,Math.ceil(members.length/PAGE)),inline:true}).setFooter({text:'Remove Division opens a confirmation. Discord server kick is never used.'});
    const components=[nav(e,page,members.length)];
    if(shown.length)components.push(new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('mg:select:'+key(e)+':'+page).setPlaceholder('Select a member to remove from this division').addOptions(shown.map(m=>({label:m.displayName.slice(0,75),description:m.id,value:m.id})))));
-   return {embeds:[embed],components,ephemeral:true,allowedMentions:{parse:[]}};
+   return {content:'',embeds:[embed],components,allowedMentions:{parse:[]}};
  };
  async function handle(i){
    if(i.isChatInputCommand()&&i.commandName==='manageguild'){
-     await i.deferReply({ephemeral:true});const allowed=uniqueEntries(i);if(!allowed.length)return i.editReply({content:'Access denied: you need a captain/officer role AND your numbered division role. For a full roster, enable Server Members Intent in Discord Developer Portal.'});
+     await i.deferReply({ephemeral:true});await i.guild.members.fetch(i.user.id);const allowed=uniqueEntries(i);if(!allowed.length)return i.editReply({content:'Access denied: you need a captain/officer role AND your numbered division role. For a full roster, enable Server Members Intent in Discord Developer Portal.'});
      if(allowed.length===1)return i.editReply(await render(i,allowed[0]));
      return i.editReply({content:'You have access to more than one division. Select which one to manage:',components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('mg:division').setPlaceholder('Choose your division').addOptions(allowed.map(e=>({label:(e.g.name+' • '+e.d.name).slice(0,100),value:key(e)}))))],ephemeral:true});
    }
    if(!i.customId?.startsWith('mg:'))return false;
+   await i.guild.members.fetch(i.user.id);
    const parts=i.customId.split(':');const action=parts[1];
    if(action==='division'){
      const [g,d]=i.values[0].split(':');const e=find(g,d);
      if(!e||!permitted(i,e))return i.reply({content:'Access denied.',ephemeral:true});
-     await i.deferUpdate();return i.editReply(await render(i,e));
+     await i.deferUpdate();return i.message.edit(await render(i,e));
    }
    const [g,d]=[parts[2],parts[3]],e=find(g,d);
    if(!e||!permitted(i,e))return i.reply({content:'Access denied for this division.',ephemeral:true});
-   if(action==='page'||action==='refresh'){await i.deferUpdate();return i.editReply(await render(i,e,Number(parts[4])||0));}
+   if(action==='page'||action==='refresh'){await i.deferUpdate();const payload=await render(i,e,Number(parts[4])||0);return i.message.edit(payload);}
    if(action==='select'){
      const id=i.values[0],member=await i.guild.members.fetch(id).catch(()=>null);
      if(!member||!member.roles.cache.has(e.d.divisionRoleId))return i.reply({content:'This member is no longer in the division.',ephemeral:true});
@@ -60,7 +61,7 @@ module.exports=({client,cfg,db})=>{
    if(action==='confirm'){
      const id=parts[4],member=await i.guild.members.fetch(id).catch(()=>null);
      if(!member||!member.roles.cache.has(e.d.divisionRoleId))return i.update({content:'Member is no longer in this division.',components:[]});
-     if(id===i.user.id&&!admin(i))return i.update({content:'You cannot remove yourself.',components:[]});
+     if(id===i.user.id)return i.update({content:'You cannot remove yourself.',components:[]});
      const role=await i.guild.roles.fetch(e.d.divisionRoleId);
      if(!role||!role.editable)return i.update({content:'Bot cannot manage this division role. Check role hierarchy.',components:[]});
      await i.deferUpdate();
