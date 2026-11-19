@@ -84,28 +84,15 @@ const art = async (kind, details={}) => {
   ];
   const y0=isPanel?270:250, spacing=isPanel?80:70;
   const lines=rows.map(([k,v,icon],i)=>miniIcon(icon||'info',87,y0-17+i*spacing,'#d8b4fa')+textPath(String(k),113,y0+i*spacing,17,'#c7b1df','bold',1.4)+textPath(String(v??'—').slice(0,isPanel?35:29),88,y0+34+i*spacing,isPanel?23:27,'#fff5ff','bold')).join('');
-  const mascot=isPanel?`<g transform="translate(755 145)">
-    <!-- Rambo-inspired comic portrait: long hair, red headband, combat vest -->
-    <ellipse cx="150" cy="418" rx="143" ry="22" fill="#090718" opacity=".5"/>
-    <path d="M78 278 Q25 297 15 393 L287 393 Q278 303 217 277Z" fill="#314039" stroke="#a3b3a2" stroke-width="5"/>
-    <path d="M101 280 L150 357 L202 279" fill="#b98765"/>
-    <path d="M73 286 L109 286 L150 361 L128 393 L63 393Z" fill="#465846"/>
-    <path d="M226 286 L190 286 L150 361 L174 393 L240 393Z" fill="#465846"/>
-    <path d="M65 315 L101 315 M198 315 L235 315 M73 351 L116 351 M187 351 L229 351" stroke="#9c8e6a" stroke-width="8"/>
-    <rect x="119" y="234" width="63" height="69" rx="20" fill="#c48b68"/>
-    <path d="M54 114 Q24 52 75 32 Q97 -4 151 17 Q205 -4 231 40 Q279 75 245 146 L264 254 L219 282 L207 199 L93 199 L78 281 L36 254Z" fill="#211e25" stroke="#49323a" stroke-width="6"/>
-    <ellipse cx="150" cy="170" rx="89" ry="111" fill="#d3a17c" stroke="#4b3032" stroke-width="5"/>
-    <path d="M60 139 Q52 68 106 53 Q148 23 198 58 Q244 83 239 144 L211 112 Q170 88 148 104 Q99 87 70 151Z" fill="#29232b"/>
-    <path d="M57 128 Q146 111 244 130 L242 152 Q150 138 59 153Z" fill="#c73c4c" stroke="#e8848e" stroke-width="3"/>
-    <path d="M230 137 Q272 148 289 187 L271 193 Q253 165 230 159Z" fill="#c73c4c"/>
-    <path d="M247 142 Q280 149 301 159 L283 177 L244 157Z" fill="#a72e42"/>
-    <path d="M88 158 L131 173 M170 173 L212 158" stroke="#30252a" stroke-width="11" stroke-linecap="round"/>
-    <path d="M91 182 Q111 177 128 184 M174 184 Q194 177 211 182" stroke="#30252a" stroke-width="5" fill="none"/>
-    <circle cx="112" cy="185" r="6" fill="#211c22"/><circle cx="192" cy="185" r="6" fill="#211c22"/>
-    <path d="M150 182 L139 214 L156 220" stroke="#98664e" stroke-width="6" fill="none" stroke-linecap="round"/>
-    <path d="M119 238 Q150 222 183 238 Q185 267 151 276 Q119 268 119 238Z" fill="#4c2026" stroke="#673b36" stroke-width="5"/><path d="M126 239 Q150 235 177 239 L175 248 Q149 251 128 247Z" fill="#f5e3d6"/><path d="M138 267 Q152 260 165 267" stroke="#a94c58" stroke-width="5" fill="none"/>
-    <path d="M100 355 L198 355" stroke="#8f7a60" stroke-width="11"/>
-    ${textPath('RAMBO',105,390,22,'#e8c9b5','bold',3)}
+  // Recruitment illustration: clean ticket desk, not a character.
+  const mascot=isPanel?`<g>
+    <rect x="738" y="257" width="294" height="280" rx="25" fill="#16132e" stroke="#a67be4" stroke-width="4"/>
+    <rect x="755" y="275" width="260" height="244" rx="17" fill="#231b3c" stroke="#58437f" stroke-width="2"/>
+    <path d="M782 305H988" stroke="#b981ec" stroke-width="3" opacity=".6"/>
+    ${textPath('APPLICATION',780,333,20,'#d9b3ff','bold',2)}
+    <path d="M782 357H956M782 378H930M782 399H969" stroke="#75628e" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="958" cy="469" r="28" fill="#1c443c" stroke="#74e8bb" stroke-width="4"/>
+    <path d="M943 469L954 480L974 458" fill="none" stroke="#b5ffe0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
   </g>`:'';
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650"><defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#100b22"/><stop offset=".55" stop-color="#281239"/><stop offset="1" stop-color="#090f25"/></linearGradient>
@@ -128,38 +115,31 @@ const art = async (kind, details={}) => {
   if(isPanel){
     const gif=GIFEncoder();
     const width=825,height=488,frames=24;
-    // One heavy machine gun across the chest; only recoil, muzzle flash and smoke move.
-    // Hands are anchored to its grip and foregrip, avoiding disconnected extra limbs.
+    // Loop: new ticket slides in, is reviewed, approved, and resets.
     for(let frame=0;frame<frames;frame++){
-      const cycle=frame%8;
-      const recoil=2.5*Math.sin(frame*Math.PI/4);
-      const flash=cycle<3;
-      const smoke=Array.from({length:3},(_,j)=>{
-        const age=(frame+j*8)%24/24;
-        return '<ellipse cx="'+(1071+age*27)+'" cy="'+(459-age*80-j*9)+'" rx="'+(8+age*15)+'" ry="'+(5+age*10)+'" fill="#b8b0c6" opacity="'+(.26*(1-age)).toFixed(3)+'"/>';
-      }).join('');
-      const weapon='<g transform="translate(0 '+recoil+')">'+
-        '<path d="M786 475L830 466L852 480L831 497L788 493Z" fill="#303843" stroke="#aab2bd" stroke-width="4"/>'+
-        '<rect x="822" y="447" width="178" height="48" rx="7" fill="#333d49" stroke="#aab5c1" stroke-width="5"/>'+
-        '<path d="M840 457H985M840 469H985M840 481H985" stroke="#697786" stroke-width="4"/>'+
-        '<rect x="855" y="430" width="86" height="18" rx="4" fill="#303944" stroke="#aeb9c5" stroke-width="4"/>'+
-        '<path d="M896 495L914 550L950 550L948 495Z" fill="#2a303b" stroke="#98a4b1" stroke-width="4"/>'+
-        '<path d="M855 493L850 531L870 531L882 493Z" fill="#222b35" stroke="#a1aeba" stroke-width="3"/>'+
-        '<rect x="997" y="458" width="71" height="21" rx="4" fill="#56616e" stroke="#b6c0cb" stroke-width="4"/>'+
-        '<rect x="1061" y="462" width="25" height="13" fill="#242c35" stroke="#aeb7c2" stroke-width="3"/>'+
-        '<path d="M1050 450V485M1037 450V485" stroke="#99a6b3" stroke-width="4"/>'+
+      const t=frame/frames;
+      const ease=x=>x*x*(3-2*x);
+      const arrive=t<.34?ease(t/.34):1;
+      const leave=t>.78?ease((t-.78)/.22):0;
+      const x=1110-205*arrive+230*leave;
+      const y=195+8*Math.sin(Math.PI*2*t);
+      const opacity=t>.89?Math.max(0,1-(t-.89)/.11):1;
+      const approved=t>.49&&t<.89;
+      const progress=Math.max(0,Math.min(1,(t-.32)/.22));
+      const ticket='<g transform="translate('+x+' '+y+') rotate(-8)" opacity="'+opacity+'">'+
+        '<path d="M-115 -83H95V-53Q75 -45 95 -27V83H-115V-27Q-95 -45 -115 -53Z" fill="#fffafc" stroke="#d9c7ec" stroke-width="5"/>'+
+        '<path d="M-75 -50H53" stroke="#b36bdc" stroke-width="5" stroke-linecap="round"/>'+
+        '<path d="M-75 -25H70M-75 -5H46M-75 15H60" stroke="#b5a6c5" stroke-width="6" stroke-linecap="round"/>'+
+        '<path d="M-83 37H66" stroke="#d8c6e5" stroke-width="3" stroke-dasharray="6 7"/>'+
+        textPath('TICKET',-76,67,21,'#653b8e','bold',1)+
         '</g>';
-      const arms='<path d="M818 430Q806 455 855 '+(500+recoil)+'" stroke="#c48b68" stroke-width="32" fill="none" stroke-linecap="round"/>'+
-        '<path d="M989 427Q1026 447 1017 '+(483+recoil)+'" stroke="#c48b68" stroke-width="32" fill="none" stroke-linecap="round"/>';
-      const hands='<ellipse cx="858" cy="'+(498+recoil)+'" rx="19" ry="16" fill="#c48b68" stroke="#8e6049" stroke-width="3"/>'+
-        '<ellipse cx="1017" cy="'+(481+recoil)+'" rx="19" ry="16" fill="#c48b68" stroke="#8e6049" stroke-width="3"/>';
-      const muzzle=flash?'<g><ellipse cx="1084" cy="'+(467+recoil)+'" rx="49" ry="30" fill="#ff9d31" opacity=".22"/>'+
-        '<path d="M1082 '+(467+recoil)+'L1110 '+(435+recoil)+'L1105 '+(459+recoil)+'L1147 '+(447+recoil)+'L1116 '+(472+recoil)+'L1144 '+(491+recoil)+'L1104 '+(484+recoil)+'L1106 '+(506+recoil)+'Z" fill="#ffbe49" stroke="#ff7f36" stroke-width="4"/>'+
-        '<path d="M1085 '+(467+recoil)+'L1125 '+(463+recoil)+'L1105 '+(473+recoil)+'Z" fill="#fff2bb"/></g>':'';
-      const frameSvg=svg.replace('</svg>',arms+weapon+hands+smoke+muzzle+'</svg>');
+      const progressBar='<rect x="782" y="423" width="205" height="11" rx="5" fill="#4b385e"/>'+
+        '<rect x="782" y="423" width="'+Math.round(205*progress)+'" height="11" rx="5" fill="#b988f0"/>';
+      const seal=approved?'<g transform="translate(953 470)"><circle r="35" fill="#123b34" stroke="#8af4c6" stroke-width="5"/><path d="M-18 0L-5 14L21 -15" stroke="#d5ffeb" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>':'';
+      const frameSvg=svg.replace('</svg>',progressBar+ticket+seal+'</svg>');
       const rgba=await sharp(Buffer.from(frameSvg)).resize(width,height).ensureAlpha().raw().toBuffer();
       const palette=quantize(rgba,256);
-      gif.writeFrame(applyPalette(rgba,palette),width,height,{palette,delay:75});
+      gif.writeFrame(applyPalette(rgba,palette),width,height,{palette,delay:85});
     }
     gif.finish();
     return Buffer.from(gif.bytes());
