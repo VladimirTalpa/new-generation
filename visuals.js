@@ -20,13 +20,27 @@ const textPath=(value,x,y,size,color,weight='regular',spacing=0)=>{
   }
   return shapes;
 };
+// Small vector icons keep labels consistent without external image assets.
+const miniIcon=(kind,x,y,color='#d6b3f0')=>{
+ const paths={
+ ticket:'<path d="M2 7H7A3 3 0 0 0 13 7H22V12A3 3 0 0 0 22 18V23H2V18A3 3 0 0 0 2 12Z"/><path d="M12 8V11M12 14V17M12 20V22"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6V12L16 15"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4 22V19Q4 14 12 14Q20 14 20 19V22"/>',
+ game:'<path d="M7 8H17Q21 8 22 13L23 18Q23 22 19 20L16 18H8L5 20Q1 22 1 18L2 13Q3 8 7 8Z"/><path d="M7 11V17M4 14H10M16 13H19"/>',
+ shield:'<path d="M12 2L21 6V12Q21 19 12 23Q3 19 3 12V6Z"/><path d="M8 12L11 15L16 9"/>',
+ camera:'<path d="M3 7H8L10 4H16L18 7H21V20H3Z"/><circle cx="12" cy="13" r="4"/>',
+ check:'<circle cx="12" cy="12" r="9"/><path d="M7 12L11 16L17 9"/>',
+ info:'<circle cx="12" cy="12" r="9"/><path d="M12 11V17M12 7V8"/>'
+ };
+ return '<g transform="translate('+x+' '+y+') scale(.76)" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(paths[kind]||paths.info)+'</g>';
+};
 const esc = value => String(value ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cut = (v,n=32) => esc(String(v??'—').slice(0,n));
 const art = async (kind, details={}) => {
   if(kind==='roster'){
     const division=String(details.division||'DIVISION').slice(0,30);
     const game=String(details.game||'MOHGS').slice(0,40);
-    const stats=String(details.members||0)+' MEMBERS  /  '+String(details.missing||0)+' WITHOUT ROBLOX  /  PAGE '+String(details.page||1)+' OF '+String(details.pages||1);
+    const stats=String(details.members||0)+' MEMBERS  ·  '+String(details.missing||0)+' UNLINKED  ·  PAGE '+String(details.page||1)+' / '+String(details.pages||1);
     const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="265" viewBox="0 0 1100 265"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#100e22"/><stop offset=".62" stop-color="#281637"/><stop offset="1" stop-color="#12152a"/></linearGradient><radialGradient id="glow"><stop stop-color="#d255c9" stop-opacity=".48"/><stop offset="1" stop-color="#d255c9" stop-opacity="0"/></radialGradient></defs><rect width="1100" height="265" rx="22" fill="url(#bg)"/><circle cx="975" cy="72" r="240" fill="url(#glow)"/><circle cx="957" cy="120" r="106" fill="none" stroke="#b879e8" stroke-opacity=".32" stroke-width="3"/><circle cx="957" cy="120" r="76" fill="none" stroke="#b879e8" stroke-opacity=".25"/><path d="M957 38L977 94L1035 115L977 135L957 192L937 135L879 115L937 94Z" fill="#c887e7" fill-opacity=".12" stroke="#c887e7" stroke-opacity=".4"/><rect x="32" y="28" width="1036" height="209" rx="17" fill="none" stroke="#a56bd0" stroke-opacity=".65" stroke-width="2"/><rect x="47" y="42" width="7" height="180" rx="3" fill="#cf77e7"/>${textPath('MOHGS  /  DIVISION ROSTER',78,79,23,'#d7a5f4','bold',3)}${textPath(division,78,143,48,'#ffffff','bold')}${textPath(game,78,181,23,'#cbb6df','regular')}${textPath(stats,78,219,17,'#dca9ed','bold',1)}</svg>`;
     return sharp(Buffer.from(svg)).png().toBuffer();
   }
@@ -40,10 +54,10 @@ const art = async (kind, details={}) => {
       closed:{accent:'#ed6071',soft:'#ffc2c8',bg:'#471d30',label:'CLOSED'}
     };
     const theme=themes[status]||themes.pending;
-    const rows=[['ROBLOX',details.username],['GAME',details.game],['DIVISION',details.division],['STATUS',theme.label]];
-    const fields=rows.map(([label,value],i)=>{
+    const rows=[['ROBLOX',details.username],['GAME',details.game,'game'],['DIVISION',details.division,'shield'],['STATUS',theme.label]];
+    const fields=rows.map(([label,value,icon],i)=>{
       const x=i%2===0?76:570, y=204+Math.floor(i/2)*98;
-      return textPath(label,x,y,18,theme.soft,'bold',2)+textPath(String(value??'—').slice(0,25),x,y+36,28,'#ffffff','bold');
+      return miniIcon(icon,x,y-16,theme.soft)+textPath(label,x+30,y,18,theme.soft,'bold',1.5)+textPath(String(value??'—').slice(0,25),x,y+36,27,'#ffffff','bold');
     }).join('');
     const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="390" viewBox="0 0 1100 390"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#101828"/><stop offset=".65" stop-color="${theme.bg}"/><stop offset="1" stop-color="#0c1322"/></linearGradient></defs><rect width="1100" height="390" rx="26" fill="url(#bg)"/><circle cx="1030" cy="65" r="220" fill="${theme.accent}" opacity=".14"/><rect x="30" y="26" width="1040" height="338" rx="22" fill="none" stroke="${theme.accent}" stroke-width="2"/><rect x="43" y="45" width="7" height="298" rx="3" fill="${theme.accent}"/>${textPath('MOHGS',75,104,52,'#ffffff','bold',6)}${textPath('GUILD APPLICATION',75,142,19,theme.soft,'bold',3)}<path d="M75 160H1010" stroke="${theme.accent}" opacity=".65"/>${fields}</svg>`;
     return sharp(Buffer.from(svg)).png().toBuffer();
@@ -52,24 +66,24 @@ const art = async (kind, details={}) => {
   const title=isPanel?'GUILD RECRUITMENT':isDraft?'APPLICATION PORTAL':'GUILD APPLICATION';
   const subtitle=isPanel?'YOUR NEXT ADVENTURE STARTS HERE':isDraft?'YOUR PRIVATE APPLICATION':'MOHGS RECRUITMENT REVIEW';
   const rows=isPanel?[
-    ['01  SELECT','Choose your game and division'],
-    ['02  PROFILE','Enter Roblox username and GMT timezone'],
-    ['03  SCREENSHOTS','Upload 1-5 screenshots of your units'],
-    ['04  SUBMIT','Send your application for review']
+    ['01  SELECT','Choose game & division','game'],
+    ['02  PROFILE','Roblox name & timezone','user'],
+    ['03  SCREENSHOTS','Upload 1–5 unit screenshots','camera'],
+    ['04  SUBMIT','Submit for review','check']
   ]:isDraft?[
-    ['ROBLOX USERNAME',details.username],
+    ['ROBLOX USERNAME',details.username,'user'],
     ['GAME',details.game],
     ['DIVISION',details.division],
-    ['ACTION','UPLOAD YOUR UNIT SCREENSHOTS']
+    ['NEXT STEP','UPLOAD UNIT SCREENSHOTS','camera']
   ]:[
-    ['DISCORD USER',details.discord],
+    ['DISCORD USER',details.discord,'user'],
     ['ROBLOX USERNAME',details.username],
     ['GAME',details.game],
     ['DIVISION',details.division],
-    ['STATUS',details.status]
+    ['STATUS',details.status,'info']
   ];
   const y0=isPanel?270:250, spacing=isPanel?80:70;
-  const lines=rows.map(([k,v],i)=>textPath(String(k),85,y0+i*spacing,19,'#b8a3d7','bold',2)+textPath(String(v).slice(0,44),85,y0+34+i*spacing,isPanel?25:29,'#fff5ff','bold')).join('');
+  const lines=rows.map(([k,v,icon],i)=>miniIcon(icon||'info',87,y0-17+i*spacing,'#d8b4fa')+textPath(String(k),113,y0+i*spacing,17,'#c7b1df','bold',1.4)+textPath(String(v??'—').slice(0,isPanel?35:29),88,y0+34+i*spacing,isPanel?23:27,'#fff5ff','bold')).join('');
   const mascot=isPanel?`<g transform="translate(755 145)">
     <!-- Rambo-inspired comic portrait: long hair, red headband, combat vest -->
     <ellipse cx="150" cy="418" rx="143" ry="22" fill="#090718" opacity=".5"/>
