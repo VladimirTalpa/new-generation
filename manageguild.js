@@ -1,6 +1,5 @@
-const {EmbedBuilder,ActionRowBuilder,ButtonBuilder,ButtonStyle,StringSelectMenuBuilder,AttachmentBuilder,ModalBuilder,TextInputBuilder,TextInputStyle}=require('discord.js');
-const {art}=require('./visuals');
-const PAGE=5;
+const {EmbedBuilder,ActionRowBuilder,ButtonBuilder,ButtonStyle,StringSelectMenuBuilder,ModalBuilder,TextInputBuilder,TextInputStyle}=require('discord.js');
+const PAGE=10;
 module.exports=({client,cfg,db})=>{
  const all=Object.entries(cfg.games).flatMap(([gameKey,g])=>Object.entries(g.divisions).map(([divisionKey,d])=>({gameKey,divisionKey,g,d})));
  db.exec('CREATE TABLE IF NOT EXISTS guild_member_profiles (guild_id TEXT NOT NULL, game TEXT NOT NULL, user_id TEXT NOT NULL, roblox_username TEXT NOT NULL, updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(guild_id,game,user_id))');
@@ -54,17 +53,20 @@ module.exports=({client,cfg,db})=>{
    const missing=members.filter(m=>!roblox(i.guild.id,e,m.id)).length;
    const lines=shown.map((m,j)=>{
      const username=roblox(i.guild.id,e,m.id);
-     const discordName=m.displayName.replace(/[\\r\\n]/g,' ').slice(0,70);
-     return '**'+String(page*PAGE+j+1).padStart(2,'0')+'  '+discordName+'**\\n'+
-       '↳ Roblox: '+(username?'**'+username+'**':'*Not set*');
+     const discordName=m.displayName.replace(/[\\r\\n]/g,' ').replace(/[*_`~|]/g,'').slice(0,55);
+     return '**'+String(page*PAGE+j+1).padStart(2,'0')+'. '+discordName+'**  ·  '+(username?'\`'+username+'\`':'*Roblox not set*');
    });
    const embed=new EmbedBuilder()
      .setColor(0x9872e7)
-     .setTitle('✦ Division Members')
-     .setDescription(lines.length?lines.join('\\n\\n'):'*No members found with this division role.*')
-     .setImage('attachment://mohgs-roster.png')
-     .setFooter({text:'Select a member below to edit their Roblox username or remove them'});
-   const banner=new AttachmentBuilder(await art('roster',{division:e.d.name,game:e.g.name,members:members.length,missing,page:page+1,pages:totalPages}),{name:'mohgs-roster.png'});
+     .setAuthor({name:'MOHGS  •  GUILD MANAGEMENT'})
+     .setTitle(e.d.name)
+     .setDescription('**'+e.g.name+'**\\n\\n'+(lines.length?lines.join('\\n'):'*No members found with this division role.*'))
+     .addFields(
+       {name:'Members',value:String(members.length),inline:true},
+       {name:'Roblox missing',value:String(missing),inline:true},
+       {name:'Page',value:(page+1)+' / '+totalPages,inline:true}
+     )
+     .setFooter({text:'Select a member below to manage • No server kick'});
    const components=[nav(e,page,members.length)];
    if(shown.length)components.push(new ActionRowBuilder().addComponents(
      new StringSelectMenuBuilder()
@@ -75,7 +77,7 @@ module.exports=({client,cfg,db})=>{
          return {label:m.displayName.slice(0,75),description:(username?'Roblox: '+username:'Roblox username not set').slice(0,100),value:m.id};
        }))
    ));
-   return {content:'',embeds:[embed],files:[banner],components,allowedMentions:{parse:[]}};
+   return {content:'',embeds:[embed],attachments:[],components,allowedMentions:{parse:[]}};
  };
  async function handle(i){
    if(i.isChatInputCommand()&&i.commandName==='manageguild'){
