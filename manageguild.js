@@ -43,8 +43,8 @@ module.exports=({client,cfg,db})=>{
    return [...i.guild.members.cache.values()].filter(m=>!m.user.bot&&m.roles.cache.has(e.d.divisionRoleId)).sort((a,b)=>a.displayName.localeCompare(b.displayName));
  };
  const nav=(e,page,total)=>new ActionRowBuilder().addComponents(
-   new ButtonBuilder().setCustomId('mg:page:'+key(e)+':'+Math.max(0,page-1)).setLabel('Previous').setStyle(ButtonStyle.Secondary).setDisabled(page===0),
-   new ButtonBuilder().setCustomId('mg:page:'+key(e)+':'+Math.max(0,Math.min(Math.ceil(total/PAGE)-1,page+1))).setLabel('Next').setStyle(ButtonStyle.Secondary).setDisabled((page+1)*PAGE>=total),
+   new ButtonBuilder().setCustomId('mg:page:'+key(e)+':'+Math.max(0,page-1)+':prev').setLabel('Previous').setStyle(ButtonStyle.Secondary).setDisabled(page===0),
+   new ButtonBuilder().setCustomId('mg:page:'+key(e)+':'+Math.max(0,Math.min(Math.ceil(total/PAGE)-1,page+1))+':next').setLabel('Next').setStyle(ButtonStyle.Secondary).setDisabled((page+1)*PAGE>=total),
    new ButtonBuilder().setCustomId('mg:refresh:'+key(e)+':'+page).setLabel('Refresh').setStyle(ButtonStyle.Secondary)
  );
  const render=async(i,e,page=0)=>{
