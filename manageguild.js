@@ -47,11 +47,11 @@ module.exports=({client,cfg,db})=>{
    if(action==='division'){
      const [g,d]=i.values[0].split(':');const e=find(g,d);
      if(!e||!permitted(i,e))return i.reply({content:'Access denied.',ephemeral:true});
-     await i.deferUpdate();return i.message.edit(await render(i,e));
+     await i.deferUpdate();return i.editReply(await render(i,e));
    }
    const [g,d]=[parts[2],parts[3]],e=find(g,d);
    if(!e||!permitted(i,e))return i.reply({content:'Access denied for this division.',ephemeral:true});
-   if(action==='page'||action==='refresh'){await i.deferUpdate();const payload=await render(i,e,Number(parts[4])||0);return i.message.edit(payload);}
+   if(action==='page'||action==='refresh'){await i.deferUpdate();const payload=await render(i,e,Number(parts[4])||0);return i.editReply(payload);}
    if(action==='select'){
      const id=i.values[0],member=await i.guild.members.fetch(id).catch(()=>null);
      if(!member||!member.roles.cache.has(e.d.divisionRoleId))return i.reply({content:'This member is no longer in the division.',ephemeral:true});
