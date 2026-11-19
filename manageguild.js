@@ -11,7 +11,7 @@ module.exports=({client,cfg,db})=>{
    // A staff role reused across divisions does not identify the staff member's division.
    // Require the staff member's numbered division role to disambiguate.
    const sameStaffRole=all.filter(e=>e.gameKey===entry.gameKey&&(e.d.captainRoleId===entry.d.captainRoleId||e.d.officerRoleId===entry.d.officerRoleId));
-   return sameStaffRole.length===1||r.has(entry.d.divisionRoleId);
+   const sameDivisionRole=all.filter(e=>e.gameKey===entry.gameKey&&e.d.divisionRoleId===entry.d.divisionRoleId);if(sameDivisionRole.length>1)return false;return sameStaffRole.length===1||r.has(entry.d.divisionRoleId);
  };
  const entries=i=>all.filter(e=>permitted(i,e));
  const find=(g,d)=>all.find(e=>e.gameKey===g&&e.divisionKey===d);
