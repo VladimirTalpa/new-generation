@@ -51,9 +51,10 @@ const art = (kind, details={}) => {
   const title=isPanel?'GUILD RECRUITMENT':isDraft?'APPLICATION PORTAL':'GUILD APPLICATION';
   const subtitle=isPanel?'YOUR NEXT ADVENTURE STARTS HERE':isDraft?'YOUR PRIVATE APPLICATION':'MOHGS RECRUITMENT REVIEW';
   const rows=isPanel?[
-    ['COMMUNITY','MOHGS'],
-    ['GAMES','ANIME ADVENTURES / CRUSADERS X'],
-    ['NEXT STEP','SELECT APPLY OR INFORMATION']
+    ['01  SELECT','Choose your game and division'],
+    ['02  PROFILE','Enter Roblox username and GMT timezone'],
+    ['03  SCREENSHOTS','Upload 1-5 screenshots of your units'],
+    ['04  SUBMIT','Send your application for review']
   ]:isDraft?[
     ['ROBLOX USERNAME',details.username],
     ['GAME',details.game],
@@ -66,8 +67,8 @@ const art = (kind, details={}) => {
     ['DIVISION',details.division],
     ['STATUS',details.status]
   ];
-  const y0=isPanel?278:250, spacing=isPanel?90:70;
-  const lines=rows.map(([k,v],i)=>textPath(String(k),85,y0+i*spacing,19,'#b8a3d7','bold',2)+textPath(String(v).slice(0,44),85,y0+34+i*spacing,29,'#fff5ff','bold')).join('');
+  const y0=isPanel?270:250, spacing=isPanel?80:70;
+  const lines=rows.map(([k,v],i)=>textPath(String(k),85,y0+i*spacing,19,'#b8a3d7','bold',2)+textPath(String(v).slice(0,44),85,y0+34+i*spacing,isPanel?25:29,'#fff5ff','bold')).join('');
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650"><defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#100b22"/><stop offset=".55" stop-color="#281239"/><stop offset="1" stop-color="#090f25"/></linearGradient>
     <radialGradient id="orb"><stop stop-color="#e94bbd" stop-opacity=".65"/><stop offset="1" stop-color="#e94bbd" stop-opacity="0"/></radialGradient>
