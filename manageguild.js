@@ -92,9 +92,9 @@ module.exports=({client,cfg,db})=>{
      let logged=false;
      try{
        const log=await client.channels.fetch(e.g.logsChannelId);
-       await log.send({embeds:[new EmbedBuilder().setColor(0xe45468).setTitle('✦ Division Member Removed').addFields({name:'Member',value:'<@'+id+'> (\\`'+id+'\\`)'},{name:'Roblox username',value:username},{name:'Game / Division',value:e.g.name+' / '+e.d.name},{name:'Reason',value:reason},{name:'Removed by',value:'<@'+i.user.id+'> (\\`'+i.user.id+'\\`)'},{name:'Roles',value:'Division role removed'+(sharedRemoved?' • Shared member role removed':'')},{name:'DM notification',value:dmSent?'Sent':'Not delivered'}).setTimestamp()],allowedMentions:{parse:[]}});logged=true;
+       await log.send({embeds:[new EmbedBuilder().setColor(0xe45468).setTitle('✦ Division Member Removed').addFields({name:'Member',value:'<@'+id+'> (`'+id+'`)'},{name:'Roblox username',value:username},{name:'Game / Division',value:e.g.name+' / '+e.d.name},{name:'Reason',value:reason},{name:'Removed by',value:'<@'+i.user.id+'> (`'+i.user.id+'`)'},{name:'Roles',value:'Division role removed'+(sharedRemoved?' • Shared member role removed':'')},{name:'DM notification',value:dmSent?'Sent':'Not delivered'}).setTimestamp()],allowedMentions:{parse:[]}});logged=true;
      }catch(err){console.error('Removal log failed',err);}
-     return i.editReply({content:'Removed <@'+id+'> from **'+e.d.name+'**.\\nReason: '+reason+'\\nDM: '+(dmSent?'Sent':'Could not deliver')+' • Log: '+(logged?'Saved':'Failed'),components:[],allowedMentions:{parse:[]}});
+     return i.editReply({content:'Removed <@'+id+'> from **'+e.d.name+'**.\nReason: '+reason+'\nDM: '+(dmSent?'Sent':'Could not deliver')+' • Log: '+(logged?'Saved':'Failed'),components:[],allowedMentions:{parse:[]}});
    }
    const [g,d]=[parts[2],parts[3]],e=find(g,d);
    if(!e||!permitted(i,e))return i.reply({content:'Access denied for this division.',ephemeral:true});
@@ -102,7 +102,7 @@ module.exports=({client,cfg,db})=>{
    if(action==='select'){
      const id=i.values[0],member=await i.guild.members.fetch(id).catch(()=>null);
      if(!member||!member.roles.cache.has(e.d.divisionRoleId))return i.reply({content:'This member is no longer in the division.',ephemeral:true});
-     return i.reply({content:'**Manage division member**\\nMember: <@'+id+'>\\nRoblox: **'+(roblox(i.guild.id,e,id)||'Not set')+'**\\nDivision: **'+e.d.name+'**',components:[new ActionRowBuilder().addComponents(
+     return i.reply({content:'**Manage division member**\nMember: <@'+id+'>\nRoblox: **'+(roblox(i.guild.id,e,id)||'Not set')+'**\nDivision: **'+e.d.name+'**',components:[new ActionRowBuilder().addComponents(
        new ButtonBuilder().setCustomId('mg:nickname:'+key(e)+':'+id).setLabel('Set Roblox Username').setStyle(ButtonStyle.Primary),
        new ButtonBuilder().setCustomId('mg:remove:'+key(e)+':'+id).setLabel('Remove from Division').setStyle(ButtonStyle.Danger),
        new ButtonBuilder().setCustomId('mg:cancel:'+key(e)+':'+id).setLabel('Cancel').setStyle(ButtonStyle.Secondary)
@@ -133,7 +133,7 @@ module.exports=({client,cfg,db})=>{
      if(reason.length<3)return i.reply({content:'Please provide a reason.',ephemeral:true});
      const token=Math.random().toString(36).slice(2,10);
      pendingRemovals.set(token,{guildId:i.guild.id,actor:i.user.id,game:e.gameKey,division:e.divisionKey,id,reason,expires:Date.now()+5*60*1000});
-     return i.reply({content:'**Confirm division removal**\\nMember: <@'+id+'>\\nRoblox: **'+(roblox(i.guild.id,e,id)||'Not recorded')+'**\\nDivision: **'+e.d.name+'**\\nReason: **'+reason+'**\\n\\nThis removes their division role, not their Discord server membership. A DM notification will be attempted.',components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('mg:confirm:'+token).setLabel('Confirm Removal').setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId('mg:cancel:'+key(e)+':'+id).setLabel('Cancel').setStyle(ButtonStyle.Secondary))],ephemeral:true,allowedMentions:{parse:[]}});
+     return i.reply({content:'**Confirm division removal**\nMember: <@'+id+'>\nRoblox: **'+(roblox(i.guild.id,e,id)||'Not recorded')+'**\nDivision: **'+e.d.name+'**\nReason: **'+reason+'**\n\nThis removes their division role, not their Discord server membership. A DM notification will be attempted.',components:[new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('mg:confirm:'+token).setLabel('Confirm Removal').setStyle(ButtonStyle.Danger),new ButtonBuilder().setCustomId('mg:cancel:'+key(e)+':'+id).setLabel('Cancel').setStyle(ButtonStyle.Secondary))],ephemeral:true,allowedMentions:{parse:[]}});
    }
    if(action==='cancel')return i.update({content:'Removal cancelled.',components:[]});
    return false;
