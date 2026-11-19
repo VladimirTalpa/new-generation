@@ -1,0 +1,17 @@
+{
+  "name": "mohgs-ticket-bot",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node index.js",
+    "check": "node --check index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "better-sqlite3": "^11.8.1",
+    "dotenv": "^16.4.7"
+  }
+}
