@@ -118,7 +118,7 @@ module.exports=({client,cfg,db})=>{
      }
      const username=roblox(i.guild.id,e,id)||'Not recorded';
      let dmSent=false;
-     try{await member.send({embeds:[new EmbedBuilder().setColor(0xe45468).setTitle('MOHGS | Division Removal Notice').setDescription('You have been removed from **'+e.d.name+'** in **'+e.g.name+'**.').addFields({name:'Roblox Username',value:username},{name:'Reason',value:reason}).setTimestamp()]});dmSent=true;}catch(err){console.warn('Unable to DM removed member',id,err.message);}
+     try{await member.send({embeds:[new EmbedBuilder().setColor(0xe45468).setTitle('MOHGS | Division Removal Notice').setDescription('You have been removed from **'+e.d.name+'** in **'+e.g.name+'**.').addFields({name:'Reason',value:reason}).setTimestamp()]});dmSent=true;}catch(err){console.warn('Unable to DM removed member',id,err.message);}
      let logged=false;
      try{
        const log=await client.channels.fetch(e.g.logsChannelId);
