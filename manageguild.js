@@ -53,14 +53,13 @@ module.exports=({client,cfg,db})=>{
    const missing=members.filter(m=>!roblox(i.guild.id,e,m.id)).length;
    const lines=shown.map((m,j)=>{
      const username=roblox(i.guild.id,e,m.id);
-     const discordName=m.displayName.replace(/[\\r\\n]/g,' ').replace(/[*_`~|]/g,'').slice(0,55);
-     return '**'+String(page*PAGE+j+1).padStart(2,'0')+'. '+discordName+'**  ·  '+(username?'\`'+username+'\`':'*Roblox not set*');
+     return '**'+String(page*PAGE+j+1).padStart(2,'0')+'.** <@'+m.id+'>  ·  '+(username?String.fromCharCode(96)+username+String.fromCharCode(96):'*Roblox not set*');
    });
    const embed=new EmbedBuilder()
      .setColor(0x9872e7)
      .setAuthor({name:'MOHGS  •  GUILD MANAGEMENT'})
      .setTitle(e.d.name)
-     .setDescription('**'+e.g.name+'**\\n\\n'+(lines.length?lines.join('\\n'):'*No members found with this division role.*'))
+     .setDescription('**'+e.g.name+'**'+String.fromCharCode(10,10)+(lines.length?lines.join(String.fromCharCode(10)):'*No members found with this division role.*'))
      .addFields(
        {name:'Members',value:String(members.length),inline:true},
        {name:'Roblox missing',value:String(missing),inline:true},
