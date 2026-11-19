@@ -1,4 +1,5 @@
 const sharp = require('sharp');
+const {GIFEncoder,quantize,applyPalette}=require('gifenc');
 const opentype = require('opentype.js');
 const fs = require('fs');
 const path = require('path');
@@ -21,7 +22,7 @@ const textPath=(value,x,y,size,color,weight='regular',spacing=0)=>{
 };
 const esc = value => String(value ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cut = (v,n=32) => esc(String(v??'—').slice(0,n));
-const art = (kind, details={}) => {
+const art = async (kind, details={}) => {
   if(kind==='roster'){
     const division=String(details.division||'DIVISION').slice(0,30);
     const game=String(details.game||'MOHGS').slice(0,40);
@@ -113,6 +114,30 @@ const art = (kind, details={}) => {
   ${mascot}
   ${textPath('MOHGS  /  RECRUITMENT SYSTEM',87,595,15,'#bba6d3','regular',3)}
   </svg>`;
+  if(isPanel){
+    const gif=GIFEncoder();
+    const phases=[0,0,1,2,3,2,1,0];
+    for(const phase of phases){
+      const recoil=phase===2?-9:phase===3?-15:0;
+      const flash=phase===2||phase===3;
+      const weapon=`<g transform="translate(0 ${recoil})">
+        <path d="M796 462 L1007 462 L1024 478 L1007 490 L796 490Z" fill="#242a34" stroke="#a6a9b1" stroke-width="5"/>
+        <rect x="961" y="450" width="76" height="12" rx="3" fill="#1c212b"/>
+        <rect x="1033" y="454" width="28" height="18" rx="3" fill="#454d56"/>
+        <path d="M878 487 L893 543 L920 543 L916 487" fill="#323943" stroke="#9298a2" stroke-width="4"/>
+        <path d="M816 490 L842 532 L864 524 L853 487" fill="#252b33"/>
+        <path d="M797 464 L774 451 L760 471 L795 490" fill="#41464d" stroke="#a6a9b1" stroke-width="4"/>
+        <path d="M838 468 L884 468" stroke="#808992" stroke-width="5"/>
+        ${flash?'<path d="M1060 464 L1095 438 L1084 465 L1100 480 L1070 476 L1058 497 L1050 475Z" fill="#ffdb56" stroke="#ff7a39" stroke-width="5"/>':''}
+      </g>`;
+      const frameSvg=svg.replace('</svg>',weapon+'</svg>');
+      const rgba=await sharp(Buffer.from(frameSvg)).resize(550,325).ensureAlpha().raw().toBuffer();
+      const palette=quantize(rgba,256);
+      gif.writeFrame(applyPalette(rgba,palette),550,325,{palette,delay:phase===0?360:140});
+    }
+    gif.finish();
+    return Buffer.from(gif.bytes());
+  }
   return sharp(Buffer.from(svg)).png().toBuffer();
 };
 module.exports={art};
