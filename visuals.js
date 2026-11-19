@@ -69,6 +69,27 @@ const art = (kind, details={}) => {
   ];
   const y0=isPanel?270:250, spacing=isPanel?80:70;
   const lines=rows.map(([k,v],i)=>textPath(String(k),85,y0+i*spacing,19,'#b8a3d7','bold',2)+textPath(String(v).slice(0,44),85,y0+34+i*spacing,isPanel?25:29,'#fff5ff','bold')).join('');
+  const mascot=isPanel?`<g transform="translate(755 175)">
+    <ellipse cx="150" cy="385" rx="135" ry="22" fill="#090718" opacity=".45"/>
+    <path d="M83 265 Q35 282 24 360 L267 360 Q259 280 207 263Z" fill="#6454a4" stroke="#c2a5ff" stroke-width="6"/>
+    <path d="M100 270 L145 332 L190 270" fill="#e6b5ff" opacity=".5"/>
+    <rect x="119" y="220" width="59" height="62" rx="18" fill="#f4c8a2"/>
+    <ellipse cx="150" cy="164" rx="100" ry="111" fill="#f7d3ad" stroke="#5a3858" stroke-width="6"/>
+    <ellipse cx="59" cy="169" rx="18" ry="30" fill="#eab88e"/><ellipse cx="242" cy="169" rx="18" ry="30" fill="#eab88e"/>
+    <path d="M50 140 Q48 48 148 40 Q246 45 251 141 L230 137 Q216 87 150 89 Q82 88 70 137Z" fill="#68794e" stroke="#c5d0a0" stroke-width="5"/>
+    <path d="M38 133 Q150 105 263 133 L264 150 Q150 163 37 150Z" fill="#536743" stroke="#c5d0a0" stroke-width="4"/>
+    <path d="M136 51 L162 51 L169 82 L150 96 L130 82Z" fill="#d6c28a"/>
+    <path d="M86 166 Q105 147 127 167 M172 167 Q196 146 218 167" stroke="#4c3541" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <ellipse cx="107" cy="179" rx="8" ry="11" fill="#302735"/><ellipse cx="193" cy="179" rx="8" ry="11" fill="#302735"/>
+    <path d="M144 182 Q134 211 153 210" fill="none" stroke="#bf8b76" stroke-width="5" stroke-linecap="round"/>
+    <path d="M111 232 Q150 264 190 231 Q152 245 111 232Z" fill="#673c4c"/>
+    <path d="M111 232 Q150 245 190 231" stroke="#ffffff" stroke-width="5" fill="none"/>
+    <path d="M215 287 Q255 259 280 233" stroke="#f7d3ad" stroke-width="27" fill="none" stroke-linecap="round"/>
+    <path d="M272 235 L276 197" stroke="#f7d3ad" stroke-width="15" stroke-linecap="round"/>
+    <rect x="81" y="301" width="141" height="54" rx="15" fill="#34354c" stroke="#b69bf3" stroke-width="4"/>
+    ${textPath('RECRUIT',99,335,20,'#ffffff','bold',2)}
+    <path d="M28 70 Q8 50 30 29 M274 76 Q303 54 281 29" stroke="#eacbff" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>`:'';
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650"><defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#100b22"/><stop offset=".55" stop-color="#281239"/><stop offset="1" stop-color="#090f25"/></linearGradient>
     <radialGradient id="orb"><stop stop-color="#e94bbd" stop-opacity=".65"/><stop offset="1" stop-color="#e94bbd" stop-opacity="0"/></radialGradient>
@@ -83,6 +104,7 @@ const art = (kind, details={}) => {
   ${textPath(title,88,175,26,'#e3a6f5','bold',4)}
   ${textPath(subtitle,88,212,15,'#baa6d2','regular',4)}
   <path d="M88 229H660" stroke="url(#line)" stroke-width="2"/>${lines}
+  ${mascot}
   ${textPath('MOHGS  /  RECRUITMENT SYSTEM',87,595,15,'#bba6d3','regular',3)}
   </svg>`;
   return sharp(Buffer.from(svg)).png().toBuffer();
