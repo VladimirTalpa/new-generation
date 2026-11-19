@@ -108,6 +108,7 @@ const art = async (kind, details={}) => {
   <rect x="40" y="38" width="1020" height="574" rx="24" fill="#120e25" fill-opacity=".45" stroke="#ad67f0" stroke-opacity=".6" stroke-width="2"/>
   <rect x="60" y="62" width="9" height="510" rx="4" fill="url(#line)"/>
   ${textPath('MOHGS',88,128,63,'#ffffff','bold',9)}
+  ${isPanel?'<rect x="535" y="67" width="498" height="65" rx="14" fill="#3a174c" stroke="#e6a0ff" stroke-width="3"/>'+textPath('JOIN OUR GUILD!',564,110,35,'#ffffff','bold',2):''}
   ${textPath(title,88,175,26,'#e3a6f5','bold',4)}
   ${textPath(subtitle,88,212,15,'#baa6d2','regular',4)}
   <path d="M88 229H660" stroke="url(#line)" stroke-width="2"/>${lines}
@@ -115,25 +116,35 @@ const art = async (kind, details={}) => {
   ${textPath('MOHGS  /  RECRUITMENT SYSTEM',87,595,15,'#bba6d3','regular',3)}
   </svg>`;
   if(isPanel){
+    // A seamless 16-frame loop: both rifles fire continuously, alternating
+    // recoil, muzzle flashes and ejected casings. Higher resolution than before.
     const gif=GIFEncoder();
-    const phases=[0,0,1,2,3,2,1,0];
-    for(const phase of phases){
-      const recoil=phase===2?-9:phase===3?-15:0;
-      const flash=phase===2||phase===3;
-      const weapon=`<g transform="translate(0 ${recoil})">
-        <path d="M796 462 L1007 462 L1024 478 L1007 490 L796 490Z" fill="#242a34" stroke="#a6a9b1" stroke-width="5"/>
-        <rect x="961" y="450" width="76" height="12" rx="3" fill="#1c212b"/>
-        <rect x="1033" y="454" width="28" height="18" rx="3" fill="#454d56"/>
-        <path d="M878 487 L893 543 L920 543 L916 487" fill="#323943" stroke="#9298a2" stroke-width="4"/>
-        <path d="M816 490 L842 532 L864 524 L853 487" fill="#252b33"/>
-        <path d="M797 464 L774 451 L760 471 L795 490" fill="#41464d" stroke="#a6a9b1" stroke-width="4"/>
-        <path d="M838 468 L884 468" stroke="#808992" stroke-width="5"/>
-        ${flash?'<path d="M1060 464 L1095 438 L1084 465 L1100 480 L1070 476 L1058 497 L1050 475Z" fill="#ffdb56" stroke="#ff7a39" stroke-width="5"/>':''}
-      </g>`;
-      const frameSvg=svg.replace('</svg>',weapon+'</svg>');
-      const rgba=await sharp(Buffer.from(frameSvg)).resize(550,325).ensureAlpha().raw().toBuffer();
+    const width=825,height=488,frames=16;
+    const rifle=(x,y,phase,offset)=>{
+      const wave=(phase+offset)%8;
+      const recoil=-Math.round(6*(1+Math.sin(wave*Math.PI/4))/2);
+      const flash=wave<5;
+      const glow=flash?'<ellipse cx="318" cy="5" rx="46" ry="29" fill="#ff9e35" opacity=".2"/>':'';
+      const flame=flash?'<path d="M294 0L333 -26L321 -6L358 -2L325 9L345 29L305 15L295 28L288 7Z" fill="#ffcf56" stroke="#ff813e" stroke-width="4"/><path d="M300 1L332 -12L319 2L337 7L307 8Z" fill="#fff5c6"/>':'';
+      const casing='<rect x="'+(115+(wave*8))+'" y="'+(-30-wave*4)+'" width="13" height="6" rx="2" fill="#e7b15d" transform="rotate('+(-wave*9)+' '+(115+wave*8)+' '+(-30-wave*4)+')"/>';
+      return '<g transform="translate('+x+' '+(y+recoil)+')">'+
+        '<path d="M0 -10L42 -17L66 -9L70 16L39 20L0 8Z" fill="#373a42" stroke="#a6a6ad" stroke-width="4"/>'+
+        '<rect x="65" y="-19" width="174" height="37" rx="6" fill="#262d36" stroke="#adb3bb" stroke-width="4"/>'+
+        '<path d="M78 -13H218M83 1H226" stroke="#697985" stroke-width="4"/>'+
+        '<rect x="117" y="-35" width="75" height="15" rx="3" fill="#333c48" stroke="#adb3bb" stroke-width="3"/>'+
+        '<rect x="224" y="-11" width="70" height="13" rx="3" fill="#626d79" stroke="#adb3bb" stroke-width="3"/>'+
+        '<path d="M127 18L143 70L173 70L164 18Z" fill="#303741" stroke="#8f9ba7" stroke-width="4"/>'+
+        '<path d="M86 18L106 55L121 47L112 18Z" fill="#454e57"/>'+
+        '<path d="M70 9L53 43L68 50L95 14" fill="#252a34" stroke="#9ba4b1" stroke-width="3"/>'+
+        glow+flame+casing+'</g>';
+    };
+    for(let frame=0;frame<frames;frame++){
+      const bob=Math.round(2*Math.sin(frame*Math.PI/8));
+      const effects='<g transform="translate(0 '+bob+')">'+rifle(751,414,frame,0)+rifle(755,513,frame,4)+'</g>';
+      const frameSvg=svg.replace('</svg>',effects+'</svg>');
+      const rgba=await sharp(Buffer.from(frameSvg)).resize(width,height).ensureAlpha().raw().toBuffer();
       const palette=quantize(rgba,256);
-      gif.writeFrame(applyPalette(rgba,palette),550,325,{palette,delay:phase===0?360:140});
+      gif.writeFrame(applyPalette(rgba,palette),width,height,{palette,delay:75});
     }
     gif.finish();
     return Buffer.from(gif.bytes());
