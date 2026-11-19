@@ -84,22 +84,28 @@ const art = async (kind, details={}) => {
   ];
   const y0=isPanel?270:250, spacing=isPanel?80:70;
   const lines=rows.map(([k,v,icon],i)=>miniIcon(icon||'info',87,y0-17+i*spacing,'#d8b4fa')+textPath(String(k),113,y0+i*spacing,17,'#c7b1df','bold',1.4)+textPath(String(v??'—').slice(0,isPanel?35:29),88,y0+34+i*spacing,isPanel?23:27,'#fff5ff','bold')).join('');
-  // Blonde, red-eyed guild mascot replacing the former Rambo illustration.
-  const mascot=isPanel?`<g transform="translate(756 190)">
-    <ellipse cx="155" cy="366" rx="144" ry="21" fill="#0c0719" opacity=".5"/>
-    <path d="M46 273Q5 292 0 360H305Q301 292 257 273L212 258L151 300L92 258Z" fill="#aa82d3" stroke="#eee0ff" stroke-width="5"/>
-    <path d="M65 283L102 282L149 332L126 360H36Z M238 283L204 282L154 332L177 360H269Z" fill="#ddd0f5"/>
-    <path d="M120 279L151 320L183 279" fill="#30213f"/><path d="M149 306L132 328L152 355L173 328Z" fill="#b51c55"/>
-    <path d="M39 129Q16 53 86 34Q128 -18 199 23Q267 31 277 116L297 183L260 202L253 268L212 294L193 244L96 245L77 296L37 270L49 208L10 190Z" fill="#f8d18c" stroke="#a96049" stroke-width="5"/>
-    <path d="M50 94Q69 23 150 24Q235 18 256 98L247 195Q238 252 177 274L115 270Q61 236 52 186Z" fill="#f8adac" stroke="#a95669" stroke-width="5"/>
-    <path d="M38 127Q34 53 103 33Q148 -4 213 32Q253 48 264 113L226 99L210 65L193 123L174 83L150 131L125 77L103 148L80 106L51 164Z" fill="#ffdb9c" stroke="#fff4d3" stroke-width="5"/>
-    <path d="M56 174L111 158L127 182L98 202L62 194Z M175 181L195 153L246 165L236 195L194 203Z" fill="#fff5ff" stroke="#41233c" stroke-width="7"/>
-    <ellipse cx="99" cy="183" rx="15" ry="19" fill="#bc1d51"/><ellipse cx="204" cy="180" rx="15" ry="19" fill="#bc1d51"/>
-    <circle cx="103" cy="177" r="6" fill="#fff4ff"/><circle cx="208" cy="174" r="6" fill="#fff4ff"/>
-    <path d="M62 155L121 167M180 166L243 153" stroke="#3b2138" stroke-width="10" stroke-linecap="round"/>
-    <path d="M142 195L136 214L154 220" stroke="#d47580" stroke-width="5" fill="none"/>
-    <path d="M111 237Q149 225 190 238L181 252Q151 258 120 252Z" fill="#fff6ff" stroke="#a84b69" stroke-width="5"/>
-    <path d="M35 154L10 219L44 234L71 191M256 151L296 219L260 235L235 192" fill="#ffd69b" stroke="#b87856" stroke-width="4"/>
+  const mascot=isPanel?`<g transform="translate(755 145)">
+    <!-- Rambo-inspired comic portrait: long hair, red headband, combat vest -->
+    <ellipse cx="150" cy="418" rx="143" ry="22" fill="#090718" opacity=".5"/>
+    <path d="M78 278 Q25 297 15 393 L287 393 Q278 303 217 277Z" fill="#314039" stroke="#a3b3a2" stroke-width="5"/>
+    <path d="M101 280 L150 357 L202 279" fill="#b98765"/>
+    <path d="M73 286 L109 286 L150 361 L128 393 L63 393Z" fill="#465846"/>
+    <path d="M226 286 L190 286 L150 361 L174 393 L240 393Z" fill="#465846"/>
+    <path d="M65 315 L101 315 M198 315 L235 315 M73 351 L116 351 M187 351 L229 351" stroke="#9c8e6a" stroke-width="8"/>
+    <rect x="119" y="234" width="63" height="69" rx="20" fill="#c48b68"/>
+    <path d="M54 114 Q24 52 75 32 Q97 -4 151 17 Q205 -4 231 40 Q279 75 245 146 L264 254 L219 282 L207 199 L93 199 L78 281 L36 254Z" fill="#211e25" stroke="#49323a" stroke-width="6"/>
+    <ellipse cx="150" cy="170" rx="89" ry="111" fill="#d3a17c" stroke="#4b3032" stroke-width="5"/>
+    <path d="M60 139 Q52 68 106 53 Q148 23 198 58 Q244 83 239 144 L211 112 Q170 88 148 104 Q99 87 70 151Z" fill="#29232b"/>
+    <path d="M57 128 Q146 111 244 130 L242 152 Q150 138 59 153Z" fill="#c73c4c" stroke="#e8848e" stroke-width="3"/>
+    <path d="M230 137 Q272 148 289 187 L271 193 Q253 165 230 159Z" fill="#c73c4c"/>
+    <path d="M247 142 Q280 149 301 159 L283 177 L244 157Z" fill="#a72e42"/>
+    <path d="M88 158 L131 173 M170 173 L212 158" stroke="#30252a" stroke-width="11" stroke-linecap="round"/>
+    <path d="M91 182 Q111 177 128 184 M174 184 Q194 177 211 182" stroke="#30252a" stroke-width="5" fill="none"/>
+    <circle cx="112" cy="185" r="6" fill="#211c22"/><circle cx="192" cy="185" r="6" fill="#211c22"/>
+    <path d="M150 182 L139 214 L156 220" stroke="#98664e" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M119 238 Q150 222 183 238 Q185 267 151 276 Q119 268 119 238Z" fill="#4c2026" stroke="#673b36" stroke-width="5"/><path d="M126 239 Q150 235 177 239 L175 248 Q149 251 128 247Z" fill="#f5e3d6"/><path d="M138 267 Q152 260 165 267" stroke="#a94c58" stroke-width="5" fill="none"/>
+    <path d="M100 355 L198 355" stroke="#8f7a60" stroke-width="11"/>
+    ${textPath('RAMBO',105,390,22,'#e8c9b5','bold',3)}
   </g>`:'';
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650"><defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#100b22"/><stop offset=".55" stop-color="#281239"/><stop offset="1" stop-color="#090f25"/></linearGradient>
@@ -122,24 +128,28 @@ const art = async (kind, details={}) => {
   if(isPanel){
     const gif=GIFEncoder();
     const width=825,height=488,frames=24;
-    // Smooth cyclic lift, hold, and lower; GIFEncoder loops by default.
-    for(let frame=0;frame<frames;frame++){
-      const t=frame/frames;
-      const lift=t<.30?(.5-.5*Math.cos(Math.PI*t/.30)):t<.65?1:t<.94?(.5+.5*Math.cos(Math.PI*(t-.65)/.29)):0;
-      const y=445-330*lift;
-      const handY=y+25;
-      const sign='<g transform="translate(0 '+y+')">'+
-        '<path d="M737 0Q906 -8 1062 0L1058 115Q914 122 737 115Z" fill="#fffaf8" stroke="#c9b6d2" stroke-width="5"/>'+
-        '<path d="M750 13Q900 3 1048 13" stroke="#e9dfea" stroke-width="3" fill="none"/>'+
-        textPath('#Nr1',800,82,73,'#bd1650','bold',1)+
-        '<path d="M793 95H1006" stroke="#e14a81" stroke-width="5"/>'+
+    // Forced-perspective rifles: the two muzzles face the viewer.
+    const gun=(x,y,phase,offset)=>{
+      const recoil=3*Math.sin((phase+offset)*Math.PI/3);
+      const firing=(phase+offset)%6<3;
+      return '<g transform="translate('+x+' '+(y+recoil)+')">'+
+        '<path d="M-14 48L-32 110L-12 117L17 50Z" fill="#313842" stroke="#9da6b0" stroke-width="4"/>'+
+        '<path d="M-33 12L-24 65L24 65L33 12Z" fill="#262e38" stroke="#9ba6b3" stroke-width="5"/>'+
+        '<path d="M-31 16L-50 -44L-34 -70L34 -70L50 -44L31 16Z" fill="#454f5a" stroke="#b4bdc7" stroke-width="5"/>'+
+        '<path d="M-35 -36H35M-28 -13H28M-23 7H23" stroke="#768592" stroke-width="5"/>'+
+        '<ellipse cx="0" cy="-52" rx="39" ry="32" fill="#909aa7" stroke="#d5dbe2" stroke-width="5"/>'+
+        '<ellipse cx="0" cy="-52" rx="27" ry="22" fill="#171c25" stroke="#515e6b" stroke-width="5"/>'+
+        '<ellipse cx="0" cy="-52" rx="12" ry="11" fill="#080b11"/>'+
+        (firing?'<circle cx="0" cy="-52" r="53" fill="#ffbb47" opacity=".18"/><path d="M0 -113L15 -83L54 -100L36 -67L70 -50L36 -35L51 1L12 -20L-3 12L-18 -21L-58 -5L-37 -39L-73 -58L-34 -73L-48 -104L-12 -84Z" fill="#ffbc45" stroke="#ff813c" stroke-width="5"/><circle cx="0" cy="-52" r="18" fill="#fff4c6"/>':'')+
         '</g>';
-      const arms='<path d="M805 478Q758 421 753 '+handY+'" stroke="#b58bda" stroke-width="38" fill="none" stroke-linecap="round"/>'+
-        '<path d="M1000 478Q1050 422 1048 '+handY+'" stroke="#b58bda" stroke-width="38" fill="none" stroke-linecap="round"/>'+
-        '<ellipse cx="753" cy="'+handY+'" rx="19" ry="23" fill="#f8adac" stroke="#ba687b" stroke-width="3"/>'+
-        '<ellipse cx="1048" cy="'+handY+'" rx="19" ry="23" fill="#f8adac" stroke="#ba687b" stroke-width="3"/>';
-      // Draw arms behind the banner, with both hands gripping its top corners.
-      const frameSvg=svg.replace('</svg>',arms+sign+'</svg>');
+    };
+    for(let frame=0;frame<frames;frame++){
+      const sway=2*Math.sin(frame*2*Math.PI/frames);
+      const arms='<path d="M829 429Q804 445 832 486L848 501" fill="none" stroke="#c48b68" stroke-width="33" stroke-linecap="round"/>'+
+        '<path d="M977 429Q1003 444 975 486L959 501" fill="none" stroke="#c48b68" stroke-width="33" stroke-linecap="round"/>'+
+        '<ellipse cx="851" cy="494" rx="19" ry="22" fill="#c48b68" stroke="#8b5e48" stroke-width="3"/>'+
+        '<ellipse cx="956" cy="494" rx="19" ry="22" fill="#c48b68" stroke="#8b5e48" stroke-width="3"/>';
+      const frameSvg=svg.replace('</svg>',arms+gun(849,510+sway,frame,0)+gun(958,510-sway,frame,3)+'</svg>');
       const rgba=await sharp(Buffer.from(frameSvg)).resize(width,height).ensureAlpha().raw().toBuffer();
       const palette=quantize(rgba,256);
       gif.writeFrame(applyPalette(rgba,palette),width,height,{palette,delay:75});
