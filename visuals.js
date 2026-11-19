@@ -116,35 +116,50 @@ const art = async (kind, details={}) => {
   ${textPath('MOHGS  /  RECRUITMENT SYSTEM',87,595,15,'#bba6d3','regular',3)}
   </svg>`;
   if(isPanel){
-    // A seamless 16-frame loop: both rifles fire continuously, alternating
-    // recoil, muzzle flashes and ejected casings. Higher resolution than before.
     const gif=GIFEncoder();
-    const width=825,height=488,frames=16;
-    const rifle=(x,y,phase,offset)=>{
-      const wave=(phase+offset)%8;
-      const recoil=-Math.round(6*(1+Math.sin(wave*Math.PI/4))/2);
-      const flash=wave<5;
-      const glow=flash?'<ellipse cx="318" cy="5" rx="46" ry="29" fill="#ff9e35" opacity=".2"/>':'';
-      const flame=flash?'<path d="M294 0L333 -26L321 -6L358 -2L325 9L345 29L305 15L295 28L288 7Z" fill="#ffcf56" stroke="#ff813e" stroke-width="4"/><path d="M300 1L332 -12L319 2L337 7L307 8Z" fill="#fff5c6"/>':'';
-      const casing='<rect x="'+(115+(wave*8))+'" y="'+(-30-wave*4)+'" width="13" height="6" rx="2" fill="#e7b15d" transform="rotate('+(-wave*9)+' '+(115+wave*8)+' '+(-30-wave*4)+')"/>';
-      return '<g transform="translate('+x+' '+(y+recoil)+')">'+
-        '<path d="M0 -10L42 -17L66 -9L70 16L39 20L0 8Z" fill="#373a42" stroke="#a6a6ad" stroke-width="4"/>'+
-        '<rect x="65" y="-19" width="174" height="37" rx="6" fill="#262d36" stroke="#adb3bb" stroke-width="4"/>'+
-        '<path d="M78 -13H218M83 1H226" stroke="#697985" stroke-width="4"/>'+
-        '<rect x="117" y="-35" width="75" height="15" rx="3" fill="#333c48" stroke="#adb3bb" stroke-width="3"/>'+
-        '<rect x="224" y="-11" width="70" height="13" rx="3" fill="#626d79" stroke="#adb3bb" stroke-width="3"/>'+
-        '<path d="M127 18L143 70L173 70L164 18Z" fill="#303741" stroke="#8f9ba7" stroke-width="4"/>'+
-        '<path d="M86 18L106 55L121 47L112 18Z" fill="#454e57"/>'+
-        '<path d="M70 9L53 43L68 50L95 14" fill="#252a34" stroke="#9ba4b1" stroke-width="3"/>'+
-        glow+flame+casing+'</g>';
+    const width=825,height=488,frames=24;
+    // Both guns are physically gripped in raised hands, barrels aimed upward.
+    const raisedGun=(x,y,tilt,phase,offset)=>{
+      const cycle=(phase+offset)%6;
+      const recoil=2.5*Math.sin(phase*Math.PI/3+offset);
+      const firing=cycle<4;
+      const muzzle=firing?'<ellipse cx="0" cy="-276" rx="31" ry="43" fill="#ff9b30" opacity=".23"/><path d="M0 -260L-19 -299L-4 -289L0 -327L10 -290L27 -305L16 -268L34 -273L8 -252L-8 -252Z" fill="#ffcb49" stroke="#ff743b" stroke-width="3"/><path d="M0 -263L-7 -297L3 -287L10 -303L8 -270Z" fill="#fff4bf"/>':'';
+      const shell='<rect x="'+(24+cycle*5)+'" y="'+(-175-cycle*8)+'" width="12" height="6" rx="2" fill="#e5b35f" transform="rotate('+(phase*19)+' '+(24+cycle*5)+' '+(-175-cycle*8)+')"/>';
+      return '<g transform="translate('+x+' '+(y+recoil)+') rotate('+tilt+')">'+
+        '<path d="M-15 -8L-24 -61L-17 -72L17 -72L23 -10Z" fill="#353b45" stroke="#b4bac2" stroke-width="4"/>'+
+        '<rect x="-22" y="-224" width="44" height="169" rx="6" fill="#252b35" stroke="#a7b0bb" stroke-width="4"/>'+
+        '<path d="M-13 -211V-83M0 -210V-82M13 -211V-83" stroke="#53616f" stroke-width="3"/>'+
+        '<rect x="-11" y="-270" width="22" height="49" rx="3" fill="#535d69" stroke="#a8b2bf" stroke-width="3"/>'+
+        '<rect x="-19" y="-239" width="38" height="13" fill="#181d25"/>'+
+        '<path d="M-23 -117L-45 -97L-38 -46L-13 -52L-8 -118Z" fill="#343c48" stroke="#9fa8b5" stroke-width="4"/>'+
+        '<path d="M-13 -62L-17 7L16 7L13 -62Z" fill="#272d37" stroke="#a4aab4" stroke-width="4"/>'+
+        '<path d="M-22 -150H22" stroke="#aeb8c2" stroke-width="5"/>'+
+        muzzle+shell+'</g>';
+    };
+    const arms=(phase)=>{
+      const lift=2*Math.sin(phase*Math.PI/6);
+      return '<g>'+
+        '<path d="M835 438Q806 408 812 371L825 '+(338+lift)+'" stroke="#b77d5e" stroke-width="35" fill="none" stroke-linecap="round"/>'+
+        '<path d="M982 438Q1008 408 1004 371L996 '+(338-lift)+'" stroke="#b77d5e" stroke-width="35" fill="none" stroke-linecap="round"/>'+
+        raisedGun(822,339,-10,phase,0)+raisedGun(997,339,10,phase,3)+
+        '<ellipse cx="822" cy="338" rx="19" ry="26" fill="#d09b77" stroke="#855b49" stroke-width="3"/>'+
+        '<ellipse cx="997" cy="338" rx="19" ry="26" fill="#d09b77" stroke="#855b49" stroke-width="3"/>'+
+        '<path d="M812 326L828 325M988 326L1004 325" stroke="#855b49" stroke-width="4"/>'+
+        '</g>';
     };
     for(let frame=0;frame<frames;frame++){
-      const bob=Math.round(2*Math.sin(frame*Math.PI/8));
-      const effects='<g transform="translate(0 '+bob+')">'+rifle(751,414,frame,0)+rifle(755,513,frame,4)+'</g>';
-      const frameSvg=svg.replace('</svg>',effects+'</svg>');
+      // Gradual transition between focused and angry eyes, seamless over the loop.
+      const anger=(1-Math.cos(frame*2*Math.PI/frames))/2;
+      const browDrop=Math.round(anger*11);
+      const eyes='<g><path d="M846 '+(312+browDrop)+'L880 '+(311-browDrop)+'M930 '+(311-browDrop)+'L964 '+(312+browDrop)+'" stroke="#241c23" stroke-width="8" stroke-linecap="round"/>'+
+        '<ellipse cx="863" cy="327" rx="11" ry="'+(8-anger*3)+'" fill="#fff2dc"/>'+
+        '<ellipse cx="947" cy="327" rx="11" ry="'+(8-anger*3)+'" fill="#fff2dc"/>'+
+        '<circle cx="863" cy="327" r="5" fill="#1d1a21"/><circle cx="947" cy="327" r="5" fill="#1d1a21"/>'+
+        '<path d="M875 377Q907 '+(anger>0.5?389:379)+' 938 377" fill="none" stroke="#4d2b2d" stroke-width="6"/></g>';
+      const frameSvg=svg.replace('</svg>',arms(frame)+eyes+'</svg>');
       const rgba=await sharp(Buffer.from(frameSvg)).resize(width,height).ensureAlpha().raw().toBuffer();
       const palette=quantize(rgba,256);
-      gif.writeFrame(applyPalette(rgba,palette),width,height,{palette,delay:75});
+      gif.writeFrame(applyPalette(rgba,palette),width,height,{palette,delay:70});
     }
     gif.finish();
     return Buffer.from(gif.bytes());
