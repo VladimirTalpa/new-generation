@@ -105,7 +105,7 @@ const art = async (kind, details={}) => {
   <rect x="40" y="38" width="1020" height="574" rx="24" fill="#120e25" fill-opacity=".45" stroke="#ad67f0" stroke-opacity=".6" stroke-width="2"/>
   <rect x="60" y="62" width="9" height="510" rx="4" fill="url(#line)"/>
   ${textPath('MOHGS',88,128,63,'#ffffff','bold',9)}
-  ${isPanel?'<rect x="535" y="67" width="498" height="65" rx="14" fill="#3a174c" stroke="#e6a0ff" stroke-width="3"/>'+textPath('JOIN OUR GUILD!',564,110,35,'#ffffff','bold',2):''}
+  ${isPanel?'<path d="M740 78H1015" stroke="#b67ce8" stroke-width="2" opacity=".65"/>'+textPath('JOIN OUR GUILD',748,112,25,'#f5dcff','bold',1.2)+'<path d="M740 127H1015" stroke="#b67ce8" stroke-width="2" opacity=".65"/>':''}
   ${textPath(title,88,175,26,'#e3a6f5','bold',4)}
   ${textPath(subtitle,88,212,15,'#baa6d2','regular',4)}
   <path d="M88 229H660" stroke="url(#line)" stroke-width="2"/>${lines}
