@@ -40,8 +40,7 @@ module.exports = {
           requirementsUrl: '',
           captainRoleId: '1572467317257015316',
           officerRoleId: '1572467415575695421',
-          // IMPORTANT: user supplied the same role ID as Main Guild. Confirm before production.
-          divisionRoleId: '1572468620557025341',
+          divisionRoleId: '1572468489380167750',
           memberRoleId: '1572467647042420756'
         },
         casual: {
