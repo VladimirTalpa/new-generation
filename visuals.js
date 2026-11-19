@@ -85,15 +85,12 @@ const art = async (kind, details={}) => {
     <path d="M57 128 Q146 111 244 130 L242 152 Q150 138 59 153Z" fill="#c73c4c" stroke="#e8848e" stroke-width="3"/>
     <path d="M230 137 Q272 148 289 187 L271 193 Q253 165 230 159Z" fill="#c73c4c"/>
     <path d="M247 142 Q280 149 301 159 L283 177 L244 157Z" fill="#a72e42"/>
-    <path d="M88 167 L131 164 M170 164 L212 167" stroke="#30252a" stroke-width="11" stroke-linecap="round"/>
-    <path d="M91 182 Q111 175 128 182 M174 182 Q194 175 211 182" stroke="#30252a" stroke-width="5" fill="none"/>
+    <path d="M88 158 L131 173 M170 173 L212 158" stroke="#30252a" stroke-width="11" stroke-linecap="round"/>
+    <path d="M91 182 Q111 177 128 184 M174 184 Q194 177 211 182" stroke="#30252a" stroke-width="5" fill="none"/>
     <circle cx="112" cy="185" r="6" fill="#211c22"/><circle cx="192" cy="185" r="6" fill="#211c22"/>
     <path d="M150 182 L139 214 L156 220" stroke="#98664e" stroke-width="6" fill="none" stroke-linecap="round"/>
     <path d="M114 241 Q151 230 187 241" stroke="#50312f" stroke-width="6" fill="none" stroke-linecap="round"/>
     <path d="M115 253 Q151 266 187 253" stroke="#553c37" stroke-width="5" fill="none"/>
-    <path d="M78 287 Q46 304 35 364" stroke="#c48b68" stroke-width="28" fill="none" stroke-linecap="round"/>
-    <path d="M223 286 Q254 304 266 360" stroke="#c48b68" stroke-width="28" fill="none" stroke-linecap="round"/>
-    <path d="M35 357 L64 375 M266 353 L237 376" stroke="#c48b68" stroke-width="18" stroke-linecap="round"/>
     <path d="M100 355 L198 355" stroke="#8f7a60" stroke-width="11"/>
     ${textPath('RAMBO',105,390,22,'#e8c9b5','bold',3)}
   </g>`:'';
@@ -148,15 +145,8 @@ const art = async (kind, details={}) => {
         '</g>';
     };
     for(let frame=0;frame<frames;frame++){
-      // Gradual transition between focused and angry eyes, seamless over the loop.
-      const anger=(1-Math.cos(frame*2*Math.PI/frames))/2;
-      const browDrop=Math.round(anger*11);
-      const eyes='<g><path d="M846 '+(312+browDrop)+'L880 '+(311-browDrop)+'M930 '+(311-browDrop)+'L964 '+(312+browDrop)+'" stroke="#241c23" stroke-width="8" stroke-linecap="round"/>'+
-        '<ellipse cx="863" cy="327" rx="11" ry="'+(8-anger*3)+'" fill="#fff2dc"/>'+
-        '<ellipse cx="947" cy="327" rx="11" ry="'+(8-anger*3)+'" fill="#fff2dc"/>'+
-        '<circle cx="863" cy="327" r="5" fill="#1d1a21"/><circle cx="947" cy="327" r="5" fill="#1d1a21"/>'+
-        '<path d="M875 377Q907 '+(anger>0.5?389:379)+' 938 377" fill="none" stroke="#4d2b2d" stroke-width="6"/></g>';
-      const frameSvg=svg.replace('</svg>',arms(frame)+eyes+'</svg>');
+      // The original portrait has a fixed angry expression; animate only the weapons.
+      const frameSvg=svg.replace('</svg>',arms(frame)+'</svg>');
       const rgba=await sharp(Buffer.from(frameSvg)).resize(width,height).ensureAlpha().raw().toBuffer();
       const palette=quantize(rgba,256);
       gif.writeFrame(applyPalette(rgba,palette),width,height,{palette,delay:70});
