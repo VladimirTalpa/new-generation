@@ -3,8 +3,9 @@ const opentype = require('opentype.js');
 const fs = require('fs');
 const path = require('path');
 const fontRoot = path.dirname(require.resolve('typeface-roboto/package.json'));
-const font = opentype.parse(fs.readFileSync(path.join(fontRoot,'files','roboto-latin-400.woff')).buffer.slice(0));
-const boldFont = opentype.parse(fs.readFileSync(path.join(fontRoot,'files','roboto-latin-700.woff')).buffer.slice(0));
+const readFont=file=>{const b=fs.readFileSync(path.join(fontRoot,'files',file));return opentype.parse(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength));};
+const font = readFont('roboto-latin-400.woff');
+const boldFont = readFont('roboto-latin-700.woff');
 const textPath=(value,x,y,size,color,weight='regular',spacing=0)=>{
   const face=weight==='bold'?boldFont:font;
   const str=String(value??'—');
