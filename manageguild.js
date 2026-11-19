@@ -70,7 +70,7 @@ module.exports=({client,cfg,db})=>{
        {name:'Roblox missing',value:String(missing),inline:true},
        {name:'Page',value:(page+1)+' / '+totalPages,inline:true}
      )
-     .setFooter({text:'Select a member below to manage • No server kick'});
+     .setFooter({text:'Hosted by Daenerys'});
    const components=[nav(e,page,members.length)];
    if(shown.length)components.push(new ActionRowBuilder().addComponents(
      new StringSelectMenuBuilder()
