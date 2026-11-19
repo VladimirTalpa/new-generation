@@ -43,30 +43,14 @@ module.exports=({cfg,db})=>{
    const topStaff=[...staffCounts].sort((a,b)=>b[1]-a[1]).slice(0,3);
    const shots=db.prepare('SELECT COUNT(*) AS total FROM images WHERE application_id IN (SELECT id FROM applications WHERE guild_id=?)').get(i.guild.id).total;
    const stats={total:rows.length,accepted,rejected,pending,review,closed,rate,week:week.length,month:month.length,monthAccepted:count(month,'accepted'),monthRejected:count(month,'rejected'),recentRate,uniqueMembers,totalDivisionSlots,shots};
-   const picture=await illustration(stats,divisions,topStaff,recentResolved.length);
-   const divisionText=divisions.map(e=>'**'+e.g.name+' · '+e.d.name+'** — '+fmt(e.members)+' members').join('\n')||'No divisions configured';
-   const embed=new EmbedBuilder().setColor(0xc66af1).setAuthor({name:'MOHGS  •  RECRUITMENT ANALYTICS'}).setTitle('📊 Guild Statistics')
-     .setDescription('**Live overview of guild recruitment and membership**\nStatistics are calculated from saved applications and current Discord division roles.')
+   const picture=await illustration(stats,topStaff,recentResolved.length);
+   const embed=new EmbedBuilder().setColor(0xc66af1)
      .setImage('attachment://mohgs-statistics.png')
-     .addFields(
-       {name:'📨 All Applications',value:fmt(stats.total),inline:true},
-       {name:'🟢 Accepted',value:fmt(accepted),inline:true},
-       {name:'🔴 Rejected',value:fmt(rejected),inline:true},
-       {name:'🕒 Pending',value:fmt(pending),inline:true},
-       {name:'🔎 In Review',value:fmt(review),inline:true},
-       {name:'📁 Closed',value:fmt(closed),inline:true},
-       {name:'📅 Last 7 Days',value:fmt(week.length)+' applications',inline:true},
-       {name:'🗓️ Last 30 Days',value:fmt(month.length)+' applications',inline:true},
-       {name:'🎯 Acceptance Rate',value:rate+'% (decided applications)',inline:true},
-       {name:'👥 Current Guild Members',value:fmt(uniqueMembers)+' unique users across '+divisions.length+' divisions',inline:false},
-       {name:'🛡️ Division Rosters',value:divisionText.slice(0,1024),inline:false},
-       {name:'🏅 Top Reviewers',value:topStaff.length?topStaff.map(([id,n],idx)=>(idx+1)+'. <@'+id+'> — '+n+' decisions').join('\n'):'No completed reviews yet',inline:false},
-       {name:'📸 Unit Screenshots',value:fmt(shots),inline:true},
-       {name:'📈 30-Day Acceptance',value:recentRate+'% ('+recentResolved.length+' decisions)',inline:true}
-     ).setFooter({text:'Hosted by Daenerys • Updated on request'}).setTimestamp();
+     .setFooter({text:'Hosted by Daenerys'})
+     .setTimestamp();
    return i.editReply({embeds:[embed],files:[new AttachmentBuilder(picture,{name:'mohgs-statistics.png'})],allowedMentions:{parse:[]}});
  }
- async function illustration(s,divisions,topStaff,recentDecisions){
+ async function illustration(s,topStaff,recentDecisions){
    const W=1100,H=920;
    const t=(v,x,y,size,color,width=900,weight='bold',align='left')=>drawText(v,x,y,size,color,width,weight,align);
    const card=(x,y,label,value,color)=>'<rect x="'+x+'" y="'+y+'" width="234" height="110" rx="16" fill="#241d3c" stroke="#745596"/>'+t(label,x+16,y+34,17,'#cbb5e4',202)+t(value,x+16,y+92,49,color,202);
@@ -74,8 +58,7 @@ module.exports=({cfg,db})=>{
     ['ALL APPLICATIONS',s.total,'#ffffff'],['ACCEPTED',s.accepted,'#63e3ad'],['REJECTED',s.rejected,'#ff8298'],['PENDING',s.pending,'#f6d078'],
     ['IN REVIEW',s.review,'#91c7ff'],['CLOSED',s.closed,'#d8b0ff'],['LAST 7 DAYS',s.week,'#ffffff'],['LAST 30 DAYS',s.month,'#ffffff']
    ].map(([label,v,c],n)=>card(66+n%4*253,177+Math.floor(n/4)*128,label,fmt(v),c)).join('');
-   const divRows=divisions.slice(0,8).map((d,n)=>t(d.g.name+' / '+d.d.name,74,600+n*28,19,'#e7d9f7',440,'regular')+t(fmt(d.members),607,600+n*28,20,'#9edcff',55,'bold','right')).join('');
-   const staffRows=topStaff.length?topStaff.map(([id,n],j)=>t('#'+(j+1)+'  Reviewer '+id.slice(-6),683,600+j*40,19,'#e7d9f7',275,'regular')+t(fmt(n),1020,600+j*40,21,'#80e5bf',80,'bold','right')).join(''):t('No completed reviews',683,600,20,'#cbb5e4',320,'regular');
+   const staffRows=topStaff.length?topStaff.map(([id,n],j)=>t('#'+(j+1)+'  Reviewer '+id.slice(-6),76,610+j*52,23,'#e7d9f7',720,'regular')+t(fmt(n)+' decisions',1018,610+j*52,22,'#80e5bf',210,'bold','right')).join(''):t('No completed reviews',76,610,22,'#cbb5e4',850,'regular');
    const rate=Math.max(0,Math.min(100,s.rate));
    const content=[
     '<rect width="1100" height="920" fill="#141126"/>',
@@ -89,10 +72,8 @@ module.exports=({cfg,db})=>{
     '<rect x="70" y="474" width="950" height="16" rx="8" fill="#3c3056"/>',
     '<rect x="70" y="474" width="'+Math.round(rate*9.5)+'" height="16" rx="8" fill="#a67bee"/>',
     t('30-DAY ACCEPTANCE: '+s.recentRate+'%  /  '+recentDecisions+' DECISIONS',70,524,19,'#c9b9de',940),
-    t('DIVISION MEMBERS',72,567,24,'#e8b5ff',530),
-    t('TOP REVIEWERS',683,567,24,'#e8b5ff',337),
-    '<path d="M652 550V805" stroke="#6d547e" stroke-width="2"/>',
-    divRows,staffRows,
+    t('TOP REVIEWERS',72,567,24,'#e8b5ff',940),
+    staffRows,
     '<path d="M70 818H1020" stroke="#6d547e" stroke-width="2"/>',
     t('UNIQUE MEMBERS: '+fmt(s.uniqueMembers)+'    MEMBERSHIPS: '+fmt(s.totalDivisionSlots)+'    SCREENSHOTS: '+fmt(s.shots),70,851,19,'#e0d3f0',940),
     t('Hosted by Daenerys',70,880,17,'#bba7d0',940,'regular')
