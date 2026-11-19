@@ -40,7 +40,11 @@ module.exports=({cfg,db})=>{
    const totalDivisionSlots=divisions.reduce((n,e)=>n+e.members,0);
    const staffRows=rows.filter(r=>r.captain_id&&['accepted','rejected','closed'].includes(r.status));
    const staffCounts=new Map();for(const r of staffRows)staffCounts.set(r.captain_id,(staffCounts.get(r.captain_id)||0)+1);
-   const topStaff=[...staffCounts].sort((a,b)=>b[1]-a[1]).slice(0,3);
+   const topStaff=await Promise.all([...staffCounts].sort((a,b)=>b[1]-a[1]).slice(0,3).map(async([id,n])=>{
+     let user=i.guild.members.cache.get(id)?.user||i.client.users.cache.get(id);
+     if(!user)user=await i.client.users.fetch(id).catch(()=>null);
+     return {id,name:user?.username||'Unknown user',count:n};
+   }));
    const shots=db.prepare('SELECT COUNT(*) AS total FROM images WHERE application_id IN (SELECT id FROM applications WHERE guild_id=?)').get(i.guild.id).total;
    const stats={total:rows.length,accepted,rejected,pending,review,closed,rate,week:week.length,month:month.length,monthAccepted:count(month,'accepted'),monthRejected:count(month,'rejected'),recentRate,uniqueMembers,totalDivisionSlots,shots};
    const picture=await illustration(stats,topStaff,recentResolved.length);
@@ -58,7 +62,7 @@ module.exports=({cfg,db})=>{
     ['ALL APPLICATIONS',s.total,'#ffffff'],['ACCEPTED',s.accepted,'#63e3ad'],['REJECTED',s.rejected,'#ff8298'],['PENDING',s.pending,'#f6d078'],
     ['IN REVIEW',s.review,'#91c7ff'],['CLOSED',s.closed,'#d8b0ff'],['LAST 7 DAYS',s.week,'#ffffff'],['LAST 30 DAYS',s.month,'#ffffff']
    ].map(([label,v,c],n)=>card(66+n%4*253,177+Math.floor(n/4)*128,label,fmt(v),c)).join('');
-   const staffRows=topStaff.length?topStaff.map(([id,n],j)=>t('#'+(j+1)+'  Reviewer '+id.slice(-6),76,610+j*52,23,'#e7d9f7',720,'regular')+t(fmt(n)+' decisions',1018,610+j*52,22,'#80e5bf',210,'bold','right')).join(''):t('No completed reviews',76,610,22,'#cbb5e4',850,'regular');
+   const staffRows=topStaff.length?topStaff.map((reviewer,j)=>t('#'+(j+1)+'  @'+reviewer.name,76,610+j*52,23,'#e7d9f7',720,'regular')+t(fmt(reviewer.count)+' decisions',1018,610+j*52,22,'#80e5bf',210,'bold','right')).join(''):t('No completed reviews',76,610,22,'#cbb5e4',850,'regular');
    const rate=Math.max(0,Math.min(100,s.rate));
    const content=[
     '<rect width="1100" height="920" fill="#141126"/>',
