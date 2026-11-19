@@ -69,26 +69,32 @@ const art = (kind, details={}) => {
   ];
   const y0=isPanel?270:250, spacing=isPanel?80:70;
   const lines=rows.map(([k,v],i)=>textPath(String(k),85,y0+i*spacing,19,'#b8a3d7','bold',2)+textPath(String(v).slice(0,44),85,y0+34+i*spacing,isPanel?25:29,'#fff5ff','bold')).join('');
-  const mascot=isPanel?`<g transform="translate(755 175)">
-    <ellipse cx="150" cy="385" rx="135" ry="22" fill="#090718" opacity=".45"/>
-    <path d="M83 265 Q35 282 24 360 L267 360 Q259 280 207 263Z" fill="#6454a4" stroke="#c2a5ff" stroke-width="6"/>
-    <path d="M100 270 L145 332 L190 270" fill="#e6b5ff" opacity=".5"/>
-    <rect x="119" y="220" width="59" height="62" rx="18" fill="#f4c8a2"/>
-    <ellipse cx="150" cy="164" rx="100" ry="111" fill="#f7d3ad" stroke="#5a3858" stroke-width="6"/>
-    <ellipse cx="59" cy="169" rx="18" ry="30" fill="#eab88e"/><ellipse cx="242" cy="169" rx="18" ry="30" fill="#eab88e"/>
-    <path d="M50 140 Q48 48 148 40 Q246 45 251 141 L230 137 Q216 87 150 89 Q82 88 70 137Z" fill="#68794e" stroke="#c5d0a0" stroke-width="5"/>
-    <path d="M38 133 Q150 105 263 133 L264 150 Q150 163 37 150Z" fill="#536743" stroke="#c5d0a0" stroke-width="4"/>
-    <path d="M136 51 L162 51 L169 82 L150 96 L130 82Z" fill="#d6c28a"/>
-    <path d="M86 166 Q105 147 127 167 M172 167 Q196 146 218 167" stroke="#4c3541" stroke-width="9" fill="none" stroke-linecap="round"/>
-    <ellipse cx="107" cy="179" rx="8" ry="11" fill="#302735"/><ellipse cx="193" cy="179" rx="8" ry="11" fill="#302735"/>
-    <path d="M144 182 Q134 211 153 210" fill="none" stroke="#bf8b76" stroke-width="5" stroke-linecap="round"/>
-    <path d="M111 232 Q150 264 190 231 Q152 245 111 232Z" fill="#673c4c"/>
-    <path d="M111 232 Q150 245 190 231" stroke="#ffffff" stroke-width="5" fill="none"/>
-    <path d="M215 287 Q255 259 280 233" stroke="#f7d3ad" stroke-width="27" fill="none" stroke-linecap="round"/>
-    <path d="M272 235 L276 197" stroke="#f7d3ad" stroke-width="15" stroke-linecap="round"/>
-    <rect x="81" y="301" width="141" height="54" rx="15" fill="#34354c" stroke="#b69bf3" stroke-width="4"/>
-    ${textPath('RECRUIT',99,335,20,'#ffffff','bold',2)}
-    <path d="M28 70 Q8 50 30 29 M274 76 Q303 54 281 29" stroke="#eacbff" stroke-width="5" fill="none" stroke-linecap="round"/>
+  const mascot=isPanel?`<g transform="translate(755 145)">
+    <!-- Rambo-inspired comic portrait: long hair, red headband, combat vest -->
+    <ellipse cx="150" cy="418" rx="143" ry="22" fill="#090718" opacity=".5"/>
+    <path d="M78 278 Q25 297 15 393 L287 393 Q278 303 217 277Z" fill="#314039" stroke="#a3b3a2" stroke-width="5"/>
+    <path d="M101 280 L150 357 L202 279" fill="#b98765"/>
+    <path d="M73 286 L109 286 L150 361 L128 393 L63 393Z" fill="#465846"/>
+    <path d="M226 286 L190 286 L150 361 L174 393 L240 393Z" fill="#465846"/>
+    <path d="M65 315 L101 315 M198 315 L235 315 M73 351 L116 351 M187 351 L229 351" stroke="#9c8e6a" stroke-width="8"/>
+    <rect x="119" y="234" width="63" height="69" rx="20" fill="#c48b68"/>
+    <path d="M54 114 Q24 52 75 32 Q97 -4 151 17 Q205 -4 231 40 Q279 75 245 146 L264 254 L219 282 L207 199 L93 199 L78 281 L36 254Z" fill="#211e25" stroke="#49323a" stroke-width="6"/>
+    <ellipse cx="150" cy="170" rx="89" ry="111" fill="#d3a17c" stroke="#4b3032" stroke-width="5"/>
+    <path d="M60 139 Q52 68 106 53 Q148 23 198 58 Q244 83 239 144 L211 112 Q170 88 148 104 Q99 87 70 151Z" fill="#29232b"/>
+    <path d="M57 128 Q146 111 244 130 L242 152 Q150 138 59 153Z" fill="#c73c4c" stroke="#e8848e" stroke-width="3"/>
+    <path d="M230 137 Q272 148 289 187 L271 193 Q253 165 230 159Z" fill="#c73c4c"/>
+    <path d="M247 142 Q280 149 301 159 L283 177 L244 157Z" fill="#a72e42"/>
+    <path d="M88 167 L131 164 M170 164 L212 167" stroke="#30252a" stroke-width="11" stroke-linecap="round"/>
+    <path d="M91 182 Q111 175 128 182 M174 182 Q194 175 211 182" stroke="#30252a" stroke-width="5" fill="none"/>
+    <circle cx="112" cy="185" r="6" fill="#211c22"/><circle cx="192" cy="185" r="6" fill="#211c22"/>
+    <path d="M150 182 L139 214 L156 220" stroke="#98664e" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M114 241 Q151 230 187 241" stroke="#50312f" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M115 253 Q151 266 187 253" stroke="#553c37" stroke-width="5" fill="none"/>
+    <path d="M78 287 Q46 304 35 364" stroke="#c48b68" stroke-width="28" fill="none" stroke-linecap="round"/>
+    <path d="M223 286 Q254 304 266 360" stroke="#c48b68" stroke-width="28" fill="none" stroke-linecap="round"/>
+    <path d="M35 357 L64 375 M266 353 L237 376" stroke="#c48b68" stroke-width="18" stroke-linecap="round"/>
+    <path d="M100 355 L198 355" stroke="#8f7a60" stroke-width="11"/>
+    ${textPath('RAMBO',105,390,22,'#e8c9b5','bold',3)}
   </g>`:'';
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650"><defs>
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#100b22"/><stop offset=".55" stop-color="#281239"/><stop offset="1" stop-color="#090f25"/></linearGradient>
