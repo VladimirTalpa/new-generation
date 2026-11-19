@@ -4,7 +4,22 @@ module.exports=({client,cfg,db})=>{
  const all=Object.entries(cfg.games).flatMap(([gameKey,g])=>Object.entries(g.divisions).map(([divisionKey,d])=>({gameKey,divisionKey,g,d})));
  const admin=i=>i.memberPermissions?.has(PermissionFlagsBits.Administrator);
  const roles=i=>i.member?.roles?.cache;
- const memberRoles=async i=>(await i.guild.members.fetch(i.user.id)).roles.cache;
+ const rosterState=new Map();
+ const ROSTER_TTL=5*60*1000;
+ const ensureRoster=async(guild,force=false)=>{
+   const now=Date.now();let state=rosterState.get(guild.id);
+   if(state?.promise)return state.promise;
+   if(!force&&state?.loadedAt&&now-state.loadedAt<ROSTER_TTL)return;
+   // Gateway opcode 8 (Request Guild Members) is heavily rate limited.
+   // Reuse the existing cache and never bulk-fetch for page navigation.
+   const promise=guild.members.fetch({withPresences:false}).then(()=>{rosterState.set(guild.id,{loadedAt:Date.now()});}).catch(err=>{
+     rosterState.set(guild.id,{loadedAt:Date.now()});
+     console.warn('Guild roster refresh failed; using cached members:',err.message);
+   });
+   rosterState.set(guild.id,{loadedAt:state?.loadedAt||0,promise});
+   return promise;
+ };
+
  const permitted=(i,entry)=>{
    const r=roles(i);if(!r)return false;
    const staff=r.has(entry.d.captainRoleId)||r.has(entry.d.officerRoleId);
@@ -19,7 +34,6 @@ module.exports=({client,cfg,db})=>{
  const find=(g,d)=>all.find(e=>e.gameKey===g&&e.divisionKey===d);
  const key=e=>e.gameKey+':'+e.divisionKey;
  const divisionMembers=async(i,e)=>{
-   await i.guild.members.fetch({withPresences:false});
    return [...i.guild.members.cache.values()].filter(m=>!m.user.bot&&m.roles.cache.has(e.d.divisionRoleId)).sort((a,b)=>a.displayName.localeCompare(b.displayName));
  };
  const nav=(e,page,total)=>new ActionRowBuilder().addComponents(
@@ -37,21 +51,20 @@ module.exports=({client,cfg,db})=>{
  };
  async function handle(i){
    if(i.isChatInputCommand()&&i.commandName==='manageguild'){
-     await i.deferReply({ephemeral:true});await i.guild.members.fetch(i.user.id);const allowed=uniqueEntries(i);if(!allowed.length)return i.editReply({content:'Access denied: you need a captain/officer role AND your numbered division role. For a full roster, enable Server Members Intent in Discord Developer Portal.'});
-     if(allowed.length===1)return i.editReply(await render(i,allowed[0]));
+     await i.deferReply({ephemeral:true});const allowed=uniqueEntries(i);if(!allowed.length)return i.editReply({content:'Access denied: you need a captain/officer role AND your numbered division role. For a full roster, enable Server Members Intent in Discord Developer Portal.'});
+     if(allowed.length===1){await ensureRoster(i.guild);return i.editReply(await render(i,allowed[0]));}
      return i.editReply({content:'You have access to more than one division. Select which one to manage:',components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('mg:division').setPlaceholder('Choose your division').addOptions(allowed.map(e=>({label:(e.g.name+' • '+e.d.name).slice(0,100),value:key(e)}))))],ephemeral:true});
    }
    if(!i.customId?.startsWith('mg:'))return false;
-   await i.guild.members.fetch(i.user.id);
    const parts=i.customId.split(':');const action=parts[1];
    if(action==='division'){
      const [g,d]=i.values[0].split(':');const e=find(g,d);
      if(!e||!permitted(i,e))return i.reply({content:'Access denied.',ephemeral:true});
-     await i.deferUpdate();return i.editReply(await render(i,e));
+     await i.deferUpdate();await ensureRoster(i.guild);return i.editReply(await render(i,e));
    }
    const [g,d]=[parts[2],parts[3]],e=find(g,d);
    if(!e||!permitted(i,e))return i.reply({content:'Access denied for this division.',ephemeral:true});
-   if(action==='page'||action==='refresh'){await i.deferUpdate();const payload=await render(i,e,Number(parts[4])||0);return i.editReply(payload);}
+   if(action==='page'||action==='refresh'){await i.deferUpdate();if(action==='refresh')await ensureRoster(i.guild);const payload=await render(i,e,Number(parts[4])||0);return i.editReply(payload);}
    if(action==='select'){
      const id=i.values[0],member=await i.guild.members.fetch(id).catch(()=>null);
      if(!member||!member.roles.cache.has(e.d.divisionRoleId))return i.reply({content:'This member is no longer in the division.',ephemeral:true});
