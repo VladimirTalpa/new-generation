@@ -1,5 +1,23 @@
 const {EmbedBuilder,AttachmentBuilder}=require('discord.js');
 const sharp=require('sharp');
+const opentype=require('opentype.js');
+const fs=require('fs');
+const path=require('path');
+const fontRoot=path.dirname(require.resolve('typeface-roboto/package.json'));
+const loadFont=file=>{const b=fs.readFileSync(path.join(fontRoot,'files',file));return opentype.parse(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength));};
+const regular=loadFont('roboto-latin-400.woff');
+const bold=loadFont('roboto-latin-700.woff');
+const drawText=(value,x,y,size,color,maxWidth=Infinity,weight='bold',align='left')=>{
+ const face=weight==='regular'?regular:bold;
+ const text=String(value??'—');
+ const width=face.getAdvanceWidth(text,size);
+ const scale=Math.min(1,maxWidth/Math.max(1,width));
+ const actualWidth=width*scale;
+ const left=align==='right'?x-actualWidth:x;
+ const paths=face.getPath(text,0,0,size).toPathData(2);
+ return '<path d="'+paths+'" fill="'+color+'" transform="translate('+left+' '+y+') scale('+scale+' 1)"/>';
+};
+
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const count=(rows,status)=>rows.filter(r=>r.status===status).length;
 const fmt=n=>Number(n||0).toLocaleString('en-US');
@@ -49,40 +67,37 @@ module.exports=({cfg,db})=>{
    return i.editReply({embeds:[embed],files:[new AttachmentBuilder(picture,{name:'mohgs-statistics.png'})],allowedMentions:{parse:[]}});
  }
  async function illustration(s,divisions,topStaff,recentDecisions){
-   const W=1100,H=900;
-   const safe=v=>esc(String(v??'—').slice(0,44));
-   const card=(x,y,w,h,label,value,color='#f5f1ff')=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" fill="#211b39" stroke="#76569f" stroke-opacity=".65"/><text x="${x+18}" y="${y+30}" font-size="16" fill="#c5b2de" font-weight="700">${safe(label)}</text><text x="${x+18}" y="${y+83}" font-size="45" font-weight="800" fill="${color}">${safe(value)}</text>`;
-   const topCards=[
-     ['ALL APPLICATIONS',fmt(s.total),'#ffffff'],['ACCEPTED',fmt(s.accepted),'#64e3ad'],
-     ['REJECTED',fmt(s.rejected),'#ff8399'],['PENDING',fmt(s.pending),'#f5cf75'],
-     ['IN REVIEW',fmt(s.review),'#99c5ff'],['CLOSED',fmt(s.closed),'#c9a5e9'],
-     ['LAST 7 DAYS',fmt(s.week),'#ffffff'],['LAST 30 DAYS',fmt(s.month),'#ffffff']
-   ].map(([label,value,color],n)=>card(56+(n%4)*252,171+Math.floor(n/4)*116,234,103,label,value,color)).join('');
-   const divisionRows=divisions.slice(0,8).map((d,n)=>`<text x="75" y="${590+n*27}" font-size="19" fill="#e4d7f5">${safe(d.g.name+' / '+d.d.name)}</text><text x="600" y="${590+n*27}" font-size="20" font-weight="700" fill="#90d8f8" text-anchor="end">${fmt(d.members)}</text>`).join('');
-   const reviewerRows=topStaff.length?topStaff.map(([id,n],j)=>`<text x="678" y="${590+j*38}" font-size="19" fill="#e4d7f5">#${j+1}  ${safe(id)}</text><text x="1032" y="${590+j*38}" font-size="20" fill="#85e3bd" text-anchor="end">${n}</text>`).join(''):'<text x="680" y="590" font-size="20" fill="#c5b2de">No reviews yet</text>';
-   const progress=Math.round(Math.min(100,Math.max(0,s.rate))*9.5);
-   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-    <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101025"/><stop offset=".6" stop-color="#28163d"/><stop offset="1" stop-color="#0d1b31"/></linearGradient><linearGradient id="bar"><stop stop-color="#c77df9"/><stop offset="1" stop-color="#69e2c2"/></linearGradient></defs>
-    <rect width="${W}" height="${H}" fill="url(#bg)"/>
-    <rect x="26" y="22" width="1048" height="854" rx="24" fill="none" stroke="#9e6ac7" stroke-width="2"/>
-    <rect x="43" y="42" width="7" height="810" rx="4" fill="#c877f1"/>
-    <g font-family="Arial,sans-serif">
-    <text x="68" y="77" font-size="23" letter-spacing="4" fill="#dca5fb" font-weight="700">MOHGS  /  RECRUITMENT ANALYTICS</text>
-    <text x="67" y="139" font-size="52" font-weight="800" fill="#ffffff">GUILD STATISTICS</text>
-    ${topCards}
-    <text x="70" y="428" font-size="21" font-weight="700" fill="#e9d9f7">ACCEPTANCE RATE</text>
-    <text x="1030" y="428" text-anchor="end" font-size="26" font-weight="700" fill="#8de8c7">${s.rate}%</text>
-    <rect x="70" y="445" width="950" height="15" rx="7" fill="#3a3152"/><rect x="70" y="445" width="${progress}" height="15" rx="7" fill="url(#bar)"/>
-    <text x="70" y="493" font-size="19" fill="#c6b5dd">30-day acceptance: ${s.recentRate}% (${recentDecisions} decisions)   •   ${s.monthAccepted} accepted   •   ${s.monthRejected} rejected</text>
-    <text x="70" y="539" font-size="24" font-weight="700" fill="#e7b1fa">DIVISION MEMBERS</text>
-    <text x="677" y="539" font-size="24" font-weight="700" fill="#e7b1fa">TOP REVIEWERS</text>
-    ${divisionRows}
-    ${reviewerRows}
-    <path d="M650 520V786" stroke="#6b527f" stroke-width="2"/>
-    <path d="M70 795H1030" stroke="#6b527f" stroke-width="2"/>
-    <text x="73" y="830" font-size="20" fill="#d7c7ea">UNIQUE MEMBERS: ${fmt(s.uniqueMembers)}   •   DIVISION MEMBERSHIPS: ${fmt(s.totalDivisionSlots)}   •   SCREENSHOTS: ${fmt(s.shots)}</text>
-    <text x="73" y="856" font-size="16" fill="#a994c1">Hosted by Daenerys  •  Live data from applications and Discord roles</text>
-    </g></svg>`;
+   const W=1100,H=920;
+   const t=(v,x,y,size,color,width=900,weight='bold',align='left')=>drawText(v,x,y,size,color,width,weight,align);
+   const card=(x,y,label,value,color)=>'<rect x="'+x+'" y="'+y+'" width="234" height="110" rx="16" fill="#241d3c" stroke="#745596"/>'+t(label,x+16,y+34,17,'#cbb5e4',202)+t(value,x+16,y+92,49,color,202);
+   const metrics=[
+    ['ALL APPLICATIONS',s.total,'#ffffff'],['ACCEPTED',s.accepted,'#63e3ad'],['REJECTED',s.rejected,'#ff8298'],['PENDING',s.pending,'#f6d078'],
+    ['IN REVIEW',s.review,'#91c7ff'],['CLOSED',s.closed,'#d8b0ff'],['LAST 7 DAYS',s.week,'#ffffff'],['LAST 30 DAYS',s.month,'#ffffff']
+   ].map(([label,v,c],n)=>card(66+n%4*253,177+Math.floor(n/4)*128,label,fmt(v),c)).join('');
+   const divRows=divisions.slice(0,8).map((d,n)=>t(d.g.name+' / '+d.d.name,74,600+n*28,19,'#e7d9f7',440,'regular')+t(fmt(d.members),607,600+n*28,20,'#9edcff',55,'bold','right')).join('');
+   const staffRows=topStaff.length?topStaff.map(([id,n],j)=>t('#'+(j+1)+'  Reviewer '+id.slice(-6),683,600+j*40,19,'#e7d9f7',275,'regular')+t(fmt(n),1020,600+j*40,21,'#80e5bf',80,'bold','right')).join(''):t('No completed reviews',683,600,20,'#cbb5e4',320,'regular');
+   const rate=Math.max(0,Math.min(100,s.rate));
+   const content=[
+    '<rect width="1100" height="920" fill="#141126"/>',
+    '<rect x="26" y="22" width="1048" height="875" rx="25" fill="#211735" stroke="#8e65b8" stroke-width="2"/>',
+    '<rect x="43" y="42" width="7" height="831" rx="4" fill="#c878f3"/>',
+    t('MOHGS  /  RECRUITMENT ANALYTICS',69,84,24,'#dca4fb',940),
+    t('GUILD STATISTICS',69,148,55,'#ffffff',940),
+    metrics,
+    t('ACCEPTANCE RATE',70,454,23,'#e7d9f7',700),
+    t(rate+'%',1020,454,29,'#83e8c5',130,'bold','right'),
+    '<rect x="70" y="474" width="950" height="16" rx="8" fill="#3c3056"/>',
+    '<rect x="70" y="474" width="'+Math.round(rate*9.5)+'" height="16" rx="8" fill="#a67bee"/>',
+    t('30-DAY ACCEPTANCE: '+s.recentRate+'%  /  '+recentDecisions+' DECISIONS',70,524,19,'#c9b9de',940),
+    t('DIVISION MEMBERS',72,567,24,'#e8b5ff',530),
+    t('TOP REVIEWERS',683,567,24,'#e8b5ff',337),
+    '<path d="M652 550V805" stroke="#6d547e" stroke-width="2"/>',
+    divRows,staffRows,
+    '<path d="M70 818H1020" stroke="#6d547e" stroke-width="2"/>',
+    t('UNIQUE MEMBERS: '+fmt(s.uniqueMembers)+'    MEMBERSHIPS: '+fmt(s.totalDivisionSlots)+'    SCREENSHOTS: '+fmt(s.shots),70,851,19,'#e0d3f0',940),
+    t('Hosted by Daenerys',70,880,17,'#bba7d0',940,'regular')
+   ].join('');
+   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'+content+'</svg>';
    return sharp(Buffer.from(svg)).png().toBuffer();
  }
  return {show};
