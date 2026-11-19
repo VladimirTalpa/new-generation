@@ -1,9 +1,14 @@
 const {EmbedBuilder,ActionRowBuilder,ButtonBuilder,ButtonStyle,StringSelectMenuBuilder,ModalBuilder,TextInputBuilder,TextInputStyle}=require('discord.js');
+const {normalizeTimezone}=require('./timezone');
 const PAGE=10;
 module.exports=({client,cfg,db})=>{
  const all=Object.entries(cfg.games).flatMap(([gameKey,g])=>Object.entries(g.divisions).map(([divisionKey,d])=>({gameKey,divisionKey,g,d})));
  db.exec('CREATE TABLE IF NOT EXISTS guild_member_profiles (guild_id TEXT NOT NULL, game TEXT NOT NULL, user_id TEXT NOT NULL, roblox_username TEXT NOT NULL, updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY(guild_id,game,user_id))');
- const profile=db.prepare('SELECT roblox_username FROM guild_member_profiles WHERE guild_id=? AND game=? AND user_id=?');
+ const columns=db.prepare('PRAGMA table_info(guild_member_profiles)').all().map(c=>c.name);
+ if(!columns.includes('timezone'))db.exec('ALTER TABLE guild_member_profiles ADD COLUMN timezone TEXT');
+ const profile=db.prepare('SELECT roblox_username,timezone FROM guild_member_profiles WHERE guild_id=? AND game=? AND user_id=?');
+ const saveTimezone=db.prepare('INSERT INTO guild_member_profiles(guild_id,game,user_id,roblox_username,updated_by,updated_at,timezone) VALUES(?,?,?,?,?,?,?) ON CONFLICT(guild_id,game,user_id) DO UPDATE SET timezone=excluded.timezone,updated_by=excluded.updated_by,updated_at=excluded.updated_at');
+ const timezone=(guildId,e,userId)=>profile.get(guildId,e.gameKey,userId)?.timezone||db.prepare("SELECT timezone FROM applications WHERE user_id=? AND game=? AND status='accepted' AND timezone IS NOT NULL ORDER BY id DESC LIMIT 1").get(userId,e.gameKey)?.timezone||null;
  const saveProfile=db.prepare('INSERT INTO guild_member_profiles(guild_id,game,user_id,roblox_username,updated_by,updated_at) VALUES(?,?,?,?,?,?) ON CONFLICT(guild_id,game,user_id) DO UPDATE SET roblox_username=excluded.roblox_username,updated_by=excluded.updated_by,updated_at=excluded.updated_at');
  const roblox=(guildId,e,userId)=>profile.get(guildId,e.gameKey,userId)?.roblox_username||db.prepare("SELECT username FROM applications WHERE user_id=? AND game=? AND status='accepted' ORDER BY id DESC LIMIT 1").get(userId,e.gameKey)?.username||null;
  const roles=i=>i.member?.roles?.cache;
@@ -53,7 +58,7 @@ module.exports=({client,cfg,db})=>{
    const missing=members.filter(m=>!roblox(i.guild.id,e,m.id)).length;
    const lines=shown.map((m,j)=>{
      const username=roblox(i.guild.id,e,m.id);
-     return '**'+String(page*PAGE+j+1).padStart(2,'0')+'.** <@'+m.id+'>  ·  '+(username?String.fromCharCode(96)+username+String.fromCharCode(96):'*Roblox not set*');
+     return '**'+String(page*PAGE+j+1).padStart(2,'0')+'.** <@'+m.id+'>  ·  '+(username?String.fromCharCode(96)+username+String.fromCharCode(96):'*Roblox not set*')+'  ·  '+(timezone(i.guild.id,e,m.id)||'GMT ?');
    });
    const embed=new EmbedBuilder()
      .setColor(0x9872e7)
@@ -73,7 +78,7 @@ module.exports=({client,cfg,db})=>{
        .setPlaceholder('Manage a member  •  '+shown.length+' shown')
        .addOptions(shown.map(m=>{
          const username=roblox(i.guild.id,e,m.id);
-         return {label:m.displayName.slice(0,75),description:(username?'Roblox: '+username:'Roblox username not set').slice(0,100),value:m.id};
+         return {label:m.displayName.slice(0,75),description:((username?'Roblox: '+username:'Roblox not set')+' • '+(timezone(i.guild.id,e,m.id)||'GMT not set')).slice(0,100),value:m.id};
        }))
    ));
    return {content:'',embeds:[embed],attachments:[],components,allowedMentions:{parse:[]}};
@@ -127,8 +132,9 @@ module.exports=({client,cfg,db})=>{
    if(action==='select'){
      const id=i.values[0],member=await i.guild.members.fetch(id).catch(()=>null);
      if(!member||!member.roles.cache.has(e.d.divisionRoleId))return i.reply({content:'This member is no longer in the division.',ephemeral:true});
-     return i.reply({content:'**Manage division member**\nMember: <@'+id+'>\nRoblox: **'+(roblox(i.guild.id,e,id)||'Not set')+'**\nDivision: **'+e.d.name+'**',components:[new ActionRowBuilder().addComponents(
+     return i.reply({content:'**Manage division member**\nMember: <@'+id+'>\nRoblox: **'+(roblox(i.guild.id,e,id)||'Not set')+'**\nTimezone: **'+(timezone(i.guild.id,e,id)||'Not set')+'**\nDivision: **'+e.d.name+'**',components:[new ActionRowBuilder().addComponents(
        new ButtonBuilder().setCustomId('mg:nickname:'+key(e)+':'+id).setLabel('Set Roblox Username').setStyle(ButtonStyle.Primary),
+       new ButtonBuilder().setCustomId('mg:timezone:'+key(e)+':'+id).setLabel('Set Timezone').setStyle(ButtonStyle.Secondary),
        new ButtonBuilder().setCustomId('mg:remove:'+key(e)+':'+id).setLabel('Remove from Division').setStyle(ButtonStyle.Danger),
        new ButtonBuilder().setCustomId('mg:cancel:'+key(e)+':'+id).setLabel('Cancel').setStyle(ButtonStyle.Secondary)
      )],ephemeral:true,allowedMentions:{parse:[]}});
@@ -145,6 +151,21 @@ module.exports=({client,cfg,db})=>{
      if(!/^[A-Za-z0-9_]{3,20}$/.test(username))return i.reply({content:'Invalid Roblox username. Use 3–20 letters, numbers or underscores.',ephemeral:true});
      saveProfile.run(i.guild.id,e.gameKey,id,username,i.user.id,Date.now());
      return i.reply({content:'Saved Roblox username **'+username+'** for <@'+id+'>. Use Refresh to see the change in the roster.',ephemeral:true,allowedMentions:{parse:[]}});
+   }
+   if(action==='timezone'){
+     const id=parts[4],member=await i.guild.members.fetch(id).catch(()=>null);
+     if(!member?.roles.cache.has(e.d.divisionRoleId))return i.reply({content:'Member no longer belongs to this division.',ephemeral:true});
+     const field=new TextInputBuilder().setCustomId('timezone').setLabel('Timezone (example: GMT+3)').setPlaceholder('GMT+3').setStyle(TextInputStyle.Short).setMinLength(4).setMaxLength(9).setRequired(true);
+     const current=timezone(i.guild.id,e,id);if(current)field.setValue(current);
+     return i.showModal(new ModalBuilder().setCustomId('mg:savetz:'+key(e)+':'+id).setTitle('Set Member Timezone').addComponents(new ActionRowBuilder().addComponents(field)));
+   }
+   if(action==='savetz'){
+     const id=parts[4],member=await i.guild.members.fetch(id).catch(()=>null);
+     if(!member?.roles.cache.has(e.d.divisionRoleId))return i.reply({content:'Member no longer belongs to this division.',ephemeral:true});
+     const tz=normalizeTimezone(i.fields.getTextInputValue('timezone'));
+     if(!tz)return i.reply({content:'Invalid timezone. Example: GMT+3, GMT-5, GMT+5:30. Use an offset from GMT.',ephemeral:true});
+     saveTimezone.run(i.guild.id,e.gameKey,id,roblox(i.guild.id,e,id)||'',i.user.id,Date.now(),tz);
+     return i.reply({content:'Timezone **'+tz+'** saved for <@'+id+'>. Refresh the roster to see it.',ephemeral:true,allowedMentions:{parse:[]}});
    }
    if(action==='remove'){
      const id=parts[4],member=await i.guild.members.fetch(id).catch(()=>null);
