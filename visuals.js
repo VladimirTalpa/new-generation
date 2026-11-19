@@ -30,12 +30,21 @@ const art = (kind, details={}) => {
     return sharp(Buffer.from(svg)).png().toBuffer();
   }
   if(kind==='review'){
-    const rows=[['ROBLOX',details.username],['GAME',details.game],['DIVISION',details.division],['STATUS',details.status]];
+    const status=String(details.status||'PENDING').toLowerCase();
+    const themes={
+      pending:{accent:'#4c9fff',soft:'#b8d9ff',bg:'#10294b',label:'PENDING'},
+      review:{accent:'#e9bb3e',soft:'#ffe49a',bg:'#433313',label:'IN REVIEW'},
+      accepted:{accent:'#42c889',soft:'#a9f1cc',bg:'#103b30',label:'ACCEPTED'},
+      rejected:{accent:'#ed6071',soft:'#ffc2c8',bg:'#471d30',label:'REJECTED'},
+      closed:{accent:'#ed6071',soft:'#ffc2c8',bg:'#471d30',label:'CLOSED'}
+    };
+    const theme=themes[status]||themes.pending;
+    const rows=[['ROBLOX',details.username],['GAME',details.game],['DIVISION',details.division],['STATUS',theme.label]];
     const fields=rows.map(([label,value],i)=>{
       const x=i%2===0?76:570, y=204+Math.floor(i/2)*98;
-      return textPath(label,x,y,18,'#c6a9ed','bold',2)+textPath(String(value??'—').slice(0,25),x,y+36,28,'#ffffff','bold');
+      return textPath(label,x,y,18,theme.soft,'bold',2)+textPath(String(value??'—').slice(0,25),x,y+36,28,'#ffffff','bold');
     }).join('');
-    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="390" viewBox="0 0 1100 390"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#120e29"/><stop offset=".65" stop-color="#341a4e"/><stop offset="1" stop-color="#0c1025"/></linearGradient></defs><rect width="1100" height="390" rx="26" fill="url(#bg)"/><circle cx="1030" cy="65" r="220" fill="#a63ccf" opacity=".14"/><rect x="30" y="26" width="1040" height="338" rx="22" fill="none" stroke="#a05cd7" stroke-width="2"/><rect x="43" y="45" width="7" height="298" rx="3" fill="#d46af5"/>${textPath('MOHGS',75,104,52,'#ffffff','bold',6)}${textPath('GUILD APPLICATION',75,142,19,'#dcacf8','bold',3)}<path d="M75 160H1010" stroke="#a76ac9" opacity=".65"/>${fields}</svg>`;
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="390" viewBox="0 0 1100 390"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#101828"/><stop offset=".65" stop-color="${theme.bg}"/><stop offset="1" stop-color="#0c1322"/></linearGradient></defs><rect width="1100" height="390" rx="26" fill="url(#bg)"/><circle cx="1030" cy="65" r="220" fill="${theme.accent}" opacity=".14"/><rect x="30" y="26" width="1040" height="338" rx="22" fill="none" stroke="${theme.accent}" stroke-width="2"/><rect x="43" y="45" width="7" height="298" rx="3" fill="${theme.accent}"/>${textPath('MOHGS',75,104,52,'#ffffff','bold',6)}${textPath('GUILD APPLICATION',75,142,19,theme.soft,'bold',3)}<path d="M75 160H1010" stroke="${theme.accent}" opacity=".65"/>${fields}</svg>`;
     return sharp(Buffer.from(svg)).png().toBuffer();
   }
   const isPanel=kind==='panel', isDraft=kind==='draft';
