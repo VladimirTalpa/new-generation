@@ -3,7 +3,7 @@ const {art}=require('./visuals');
 const Database=require('better-sqlite3');const fs=require('fs');const path=require('path');require('dotenv').config();const cfg=require('./config');
 fs.mkdirSync('data',{recursive:true});const db=new Database('data/applications.sqlite');db.pragma('journal_mode = WAL');
 db.exec("CREATE TABLE IF NOT EXISTS applications(id INTEGER PRIMARY KEY,user_id TEXT,guild_id TEXT,game TEXT,division TEXT,username TEXT,status TEXT,channel_id TEXT,review_id TEXT,ticket_id TEXT,captain_id TEXT,reason TEXT,created_at INTEGER);CREATE TABLE IF NOT EXISTS images(id INTEGER PRIMARY KEY,application_id INTEGER,filename TEXT,filepath TEXT)");
-const client=new Client({intents:[GatewayIntentBits.Guilds,GatewayIntentBits.GuildMessages,GatewayIntentBits.MessageContent]});
+const client=new Client({intents:[GatewayIntentBits.Guilds,GatewayIntentBits.GuildMembers,GatewayIntentBits.GuildMessages,GatewayIntentBits.MessageContent]});
 const guildManager=require('./manageguild')({client,cfg,db});
 const get=id=>db.prepare('SELECT * FROM applications WHERE id=?').get(id), pics=id=>db.prepare('SELECT * FROM images WHERE application_id=?').all(id),game=a=>cfg.games[a.game],div=a=>game(a).divisions[a.division];
 const button=(id,label,style=ButtonStyle.Secondary)=>new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(style);
