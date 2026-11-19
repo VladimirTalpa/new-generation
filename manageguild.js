@@ -7,17 +7,19 @@ module.exports=({client,cfg,db})=>{
  const permitted=(i,entry)=>{
    if(admin(i))return true;
    const r=roles(i);if(!r)return false;
-   if(!r.has(entry.d.captainRoleId)&&!r.has(entry.d.officerRoleId))return false;
-   // A staff role reused across divisions does not identify the staff member's division.
-   // Require the staff member's numbered division role to disambiguate.
-   const sameStaffRole=all.filter(e=>e.gameKey===entry.gameKey&&(e.d.captainRoleId===entry.d.captainRoleId||e.d.officerRoleId===entry.d.officerRoleId));
-   const sameDivisionRole=all.filter(e=>e.gameKey===entry.gameKey&&e.d.divisionRoleId===entry.d.divisionRoleId);if(sameDivisionRole.length>1)return false;return sameStaffRole.length===1||r.has(entry.d.divisionRoleId);
+   const staff=r.has(entry.d.captainRoleId)||r.has(entry.d.officerRoleId);
+   return staff&&r.has(entry.d.divisionRoleId);
  };
  const entries=i=>all.filter(e=>permitted(i,e));
+ const uniqueEntries=i=>{
+   const found=entries(i);
+   const seen=new Set();
+   return found.filter(e=>{if(seen.has(e.d.divisionRoleId))return false;seen.add(e.d.divisionRoleId);return true;});
+ };
  const find=(g,d)=>all.find(e=>e.gameKey===g&&e.divisionKey===d);
  const key=e=>e.gameKey+':'+e.divisionKey;
  const divisionMembers=async(i,e)=>{
-   await i.guild.members.fetch();
+   await i.guild.members.fetch({withPresences:false});
    return [...i.guild.members.cache.values()].filter(m=>!m.user.bot&&m.roles.cache.has(e.d.divisionRoleId)).sort((a,b)=>a.displayName.localeCompare(b.displayName));
  };
  const nav=(e,page,total)=>new ActionRowBuilder().addComponents(
@@ -35,9 +37,9 @@ module.exports=({client,cfg,db})=>{
  };
  async function handle(i){
    if(i.isChatInputCommand()&&i.commandName==='manageguild'){
-     const allowed=entries(i);if(!allowed.length)return i.reply({content:'You are not assigned to a manageable division. Ask an admin to assign your numbered division role.',ephemeral:true});
-     if(allowed.length===1)return i.reply(await render(i,allowed[0]));
-     return i.reply({content:'Select the division you are assigned to:',components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('mg:division').setPlaceholder('Choose your division').addOptions(allowed.map(e=>({label:(e.g.name+' • '+e.d.name).slice(0,100),value:key(e)}))))],ephemeral:true});
+     await i.deferReply({ephemeral:true});const allowed=uniqueEntries(i);if(!allowed.length)return i.editReply({content:'Access denied: you need a captain/officer role AND your numbered division role. For a full roster, enable Server Members Intent in Discord Developer Portal.'});
+     if(allowed.length===1)return i.editReply(await render(i,allowed[0]));
+     return i.editReply({content:'You have access to more than one division. Select which one to manage:',components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('mg:division').setPlaceholder('Choose your division').addOptions(allowed.map(e=>({label:(e.g.name+' • '+e.d.name).slice(0,100),value:key(e)}))))],ephemeral:true});
    }
    if(!i.customId?.startsWith('mg:'))return false;
    const parts=i.customId.split(':');const action=parts[1];
