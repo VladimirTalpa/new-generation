@@ -14,14 +14,14 @@ module.exports=({client,cfg,db})=>{
  const roles=i=>i.member?.roles?.cache;
  const rosterState=new Map();
  const pendingRemovals=new Map();
- const ROSTER_TTL=5*60*1000;
+ const ROSTER_TTL=60*1000;
  const ensureRoster=async(guild,force=false)=>{
    const now=Date.now();let state=rosterState.get(guild.id);
    if(state?.promise)return state.promise;
    if(!force&&state?.loadedAt&&now-state.loadedAt<ROSTER_TTL)return;
    // Gateway opcode 8 (Request Guild Members) is heavily rate limited.
    // Reuse the existing cache and never bulk-fetch for page navigation.
-   const promise=guild.members.fetch({withPresences:false}).then(()=>{rosterState.set(guild.id,{loadedAt:Date.now()});}).catch(err=>{
+   const promise=guild.members.fetch({withPresences:false,force:true}).then(()=>{rosterState.set(guild.id,{loadedAt:Date.now()});}).catch(err=>{
      rosterState.set(guild.id,{loadedAt:Date.now()});
      console.warn('Guild roster refresh failed; using cached members:',err.message);
    });
@@ -35,14 +35,11 @@ module.exports=({client,cfg,db})=>{
    return staff&&r.has(entry.d.divisionRoleId);
  };
  const entries=i=>all.filter(e=>permitted(i,e));
- const uniqueEntries=i=>{
-   const found=entries(i);
-   const seen=new Set();
-   return found.filter(e=>{if(seen.has(e.d.divisionRoleId))return false;seen.add(e.d.divisionRoleId);return true;});
- };
+ const uniqueEntries=i=>entries(i);
  const find=(g,d)=>all.find(e=>e.gameKey===g&&e.divisionKey===d);
  const key=e=>e.gameKey+':'+e.divisionKey;
  const divisionMembers=async(i,e)=>{
+   await ensureRoster(i.guild);
    return [...i.guild.members.cache.values()].filter(m=>!m.user.bot&&m.roles.cache.has(e.d.divisionRoleId)).sort((a,b)=>a.displayName.localeCompare(b.displayName));
  };
  const nav=(e,page,total)=>new ActionRowBuilder().addComponents(
@@ -110,6 +107,8 @@ module.exports=({client,cfg,db})=>{
      const role=await i.guild.roles.fetch(e.d.divisionRoleId);
      if(!role?.editable)return i.editReply({content:'Bot cannot manage this division role. Check role hierarchy.',components:[]});
      await member.roles.remove(e.d.divisionRoleId,'Removed by '+i.user.id+'; reason: '+reason.slice(0,300));
+     i.guild.members.cache.delete(id);
+     await i.guild.members.fetch(id).catch(()=>null);
      const other=Object.values(e.g.divisions).some(d=>d.divisionRoleId!==e.d.divisionRoleId&&member.roles.cache.has(d.divisionRoleId));
      let sharedRemoved=false;
      if(!other&&e.d.memberRoleId&&member.roles.cache.has(e.d.memberRoleId)){
@@ -128,7 +127,7 @@ module.exports=({client,cfg,db})=>{
    }
    const [g,d]=[parts[2],parts[3]],e=find(g,d);
    if(!e||!permitted(i,e))return i.reply({content:'Access denied for this division.',ephemeral:true});
-   if(action==='page'||action==='refresh'){await i.deferUpdate();if(action==='refresh')await ensureRoster(i.guild);const payload=await render(i,e,Number(parts[4])||0);return i.editReply(payload);}
+   if(action==='page'||action==='refresh'){await i.deferUpdate();if(action==='refresh')await ensureRoster(i.guild,true);const payload=await render(i,e,Number(parts[4])||0);return i.editReply(payload);}
    if(action==='select'){
      const id=i.values[0],member=await i.guild.members.fetch(id).catch(()=>null);
      if(!member||!member.roles.cache.has(e.d.divisionRoleId))return i.reply({content:'This member is no longer in the division.',ephemeral:true});
