@@ -1,4 +1,5 @@
-const {EmbedBuilder,ActionRowBuilder,ButtonBuilder,ButtonStyle,StringSelectMenuBuilder,ModalBuilder,TextInputBuilder,TextInputStyle}=require('discord.js');
+const {EmbedBuilder,ActionRowBuilder,ButtonBuilder,ButtonStyle,StringSelectMenuBuilder,ModalBuilder,TextInputBuilder,TextInputStyle,AttachmentBuilder}=require('discord.js');
+const {art}=require('./visuals');
 const {normalizeTimezone}=require('./timezone');
 const PAGE=10;
 module.exports=({client,cfg,db})=>{
@@ -104,7 +105,34 @@ module.exports=({client,cfg,db})=>{
    const destinations=memberships.filter(e=>selected.includes(e.gameKey)).map(e=>e.g.name+' / '+e.d.name);
    return i.reply({content:'Profile updated. '+(i.commandName==='guildsetroblox'?'Roblox: **':'Timezone: **')+value+'**\\nVisible in captain/officer rosters for: '+destinations.join(', '),ephemeral:true});
  }
+ async function showGuildProfile(i){
+   await i.deferReply();
+   const target=i.options.getUser('member')||i.user;
+   const member=await i.guild.members.fetch(target.id).catch(()=>null);
+   if(!member)return i.editReply('Member not found on this server.');
+   const memberships=all.filter(e=>member.roles.cache.has(e.d.divisionRoleId));
+   if(!memberships.length)return i.editReply('This member does not have a configured guild division role.');
+   const requested=i.options.getString('game');
+   const matches=requested?memberships.filter(e=>e.gameKey===requested):memberships;
+   if(!matches.length)return i.editReply('This member has no division role for that game.');
+   const selected=matches[0];
+   const username=roblox(i.guild.id,selected,target.id)||'Not set';
+   const tz=timezone(i.guild.id,selected,target.id)||'Not set';
+   const names=matches.map(e=>e.d.name);
+   const games=[...new Set(matches.map(e=>e.g.name))];
+   const joined=member.joinedTimestamp?'<t:'+Math.floor(member.joinedTimestamp/1000)+':D>':'Unknown';
+   const image=await art('guildprofile',{display:member.displayName,username,timezone:tz,divisions:names.join(' / '),games:games.join(' / ')});
+   const embed=new EmbedBuilder().setColor(0xa879ec)
+     .setTitle('✦ '+member.displayName+' | Guild Profile')
+     .setDescription('**'+games.join(' • ')+'**\\n'+names.map(name=>'• '+name).join('\\n'))
+     .addFields({name:'Member since',value:joined,inline:true},{name:'Profile',value:username==='Not set'||tz==='Not set'?'Incomplete':'Complete',inline:true})
+     .setImage('attachment://mohgs-guild-profile.png')
+     .setFooter({text:'MOHGS • Guild Management'});
+   if(games.length>1)embed.addFields({name:'Multiple games',value:'Roblox and timezone shown for '+selected.g.name+'. Use the game option to view another.',inline:false});
+   return i.editReply({embeds:[embed],files:[new AttachmentBuilder(image,{name:'mohgs-guild-profile.png'})],allowedMentions:{parse:[]}});
+ }
  async function handle(i){
+   if(i.isChatInputCommand()&&i.commandName==='guildprofile')return showGuildProfile(i);
    if(i.isChatInputCommand()&&['guildsetroblox','guildsettimezone'].includes(i.commandName))return selfProfile(i);
    if(i.isChatInputCommand()&&i.commandName==='guildmanagement'){
      await i.deferReply({ephemeral:true});const allowed=uniqueEntries(i);if(!allowed.length)return i.editReply({content:'Access denied: you need a captain/officer role AND your numbered division role. For a full roster, enable Server Members Intent in Discord Developer Portal.'});
