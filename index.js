@@ -88,12 +88,12 @@ if(a.status!=='review'||i.channelId!==a.ticket_id)return i.reply({content:'Ticke
 if(a.captain_id!==i.user.id&&!i.memberPermissions.has(PermissionFlagsBits.Administrator))return i.reply({content:'Assigned captain only.',ephemeral:true});
 if(action==='accept'){
  const choices=Object.entries(game(a).divisions).map(([value,d])=>({label:d.name,value,description:'Assign division role and guild member role'}));
- return i.reply({content:'**Accept application**\\nChoose the division to assign. The member will also receive the matching guild member role.',components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('assign:'+id).setPlaceholder('Select destination division').addOptions(choices))],ephemeral:true});
+ return i.reply({content:'**Accept application**\nChoose the division to assign. The member will also receive the matching guild member role.',components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('assign:'+id).setPlaceholder('Select destination division').addOptions(choices))],ephemeral:true});
 }
 if(action==='assign'){
  const next=i.values[0],selected=game(a).divisions[next];
  if(!selected)return i.reply({content:'Invalid division selection.',ephemeral:true});
- return i.update({content:'**Confirm admission**\\nDivision: **'+selected.name+'**\\nRoles: <@&'+selected.divisionRoleId+'> and <@&'+selected.memberRoleId+'>',components:[row(button('confirm:'+id+':'+next,'Confirm admission',ButtonStyle.Success),button('accept:'+id,'Change division'))],allowedMentions:{parse:[]}});
+ return i.update({content:'**Confirm admission**\nDivision: **'+selected.name+'**\nRoles: <@&'+selected.divisionRoleId+'> and <@&'+selected.memberRoleId+'>',components:[row(button('confirm:'+id+':'+next,'Confirm admission',ButtonStyle.Success),button('accept:'+id,'Change division'))],allowedMentions:{parse:[]}});
 }
 if(action==='confirm'){
  const next=parts[2],selected=game(a).divisions[next];
