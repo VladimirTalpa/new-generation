@@ -33,8 +33,8 @@ const requirementText=(gameKey,divisionKey)=>{
 };
 const infoEmbed=key=>{
  const g=cfg.games[key];
- const list=Object.entries(g.divisions).map(([divisionKey,d])=>'**'+d.name+'**\\n'+requirementText(key,divisionKey)+(d.requirementsUrl?'\\n'+d.requirementsUrl:'')).join('\\n\\n');
- return new BrandEmbed().setColor(key==='animeAdventures'?0x8469ed:0xe65fa8).setTitle(brandEmojis.token('info')+' '+g.name+' | Guild Information').setDescription(brandEmojis.token('shield')+' **Divisions & Requirements**\\n\\n'+list+'\\n\\n'+brandEmojis.token('form')+' **How to Apply**\\n• Roblox username\\n• 1–5 unit screenshots\\n• Select your division').setFooter({text:'Hosted by Daenerys'});
+ const list=Object.entries(g.divisions).map(([divisionKey,d])=>'**'+d.name+'**\n'+requirementText(key,divisionKey)+(d.requirementsUrl?'\n'+d.requirementsUrl:'')).join('\n\n');
+ return new BrandEmbed().setColor(key==='animeAdventures'?0x8469ed:0xe65fa8).setTitle(brandEmojis.token('info')+' '+g.name+' | Guild Information').setDescription(brandEmojis.token('shield')+' **Divisions & Requirements**\n\n'+list+'\n\n'+brandEmojis.token('form')+' **How to Apply**\n• Roblox username\n• 1–5 unit screenshots\n• Select your division').setFooter({text:'Hosted by Daenerys'});
 };
 const cardFile=async (kind,a)=>new AttachmentBuilder(await art(kind,a?{discord:a.user_id,username:a.username,game:game(a).name,division:div(a).name,status:a.status.toUpperCase()}:{}),{name:kind==='panel'?'mohgs-recruitment.gif':kind==='draft'?'mohgs-draft.png':kind==='review'?'mohgs-review.png':'mohgs-application.png'});
 const reviewEmbed=a=>new BrandEmbed().setColor(a.status==='accepted'?0x42c889:a.status==='rejected'||a.status==='closed'?0xed6071:a.status==='review'?0xe9bb3e:0x4c9fff).setTitle((a.status==='pending'?'🕒':a.status==='review'?'🔎':a.status==='accepted'?'✅':'❌')+' Application #'+a.id+'  •  '+(a.status==='review'?'IN REVIEW':a.status.toUpperCase())).setDescription('👤 Applicant: <@'+a.user_id+'>\n📸 Screenshots: **'+pics(a.id).length+'**\n🕒 Timezone: **'+(a.timezone||'Not set')+'**').setImage('attachment://mohgs-review.png').setFooter({text:'Hosted by Daenerys'});
