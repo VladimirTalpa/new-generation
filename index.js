@@ -12,6 +12,7 @@ const Database=require('better-sqlite3');const fs=require('fs');const path=requi
 fs.mkdirSync('data',{recursive:true});const db=new Database('data/applications.sqlite');db.pragma('journal_mode = WAL');
 db.exec("CREATE TABLE IF NOT EXISTS applications(id INTEGER PRIMARY KEY,user_id TEXT,guild_id TEXT,game TEXT,division TEXT,username TEXT,status TEXT,channel_id TEXT,review_id TEXT,ticket_id TEXT,captain_id TEXT,reason TEXT,created_at INTEGER);CREATE TABLE IF NOT EXISTS images(id INTEGER PRIMARY KEY,application_id INTEGER,filename TEXT,filepath TEXT)");
 if(!db.prepare('PRAGMA table_info(applications)').all().some(c=>c.name==='timezone'))db.exec('ALTER TABLE applications ADD COLUMN timezone TEXT');
+for(const [column,type] of [['ticket_opened_at','INTEGER'],['ticket_warned_at','INTEGER']])if(!db.prepare('PRAGMA table_info(applications)').all().some(c=>c.name===column))db.exec('ALTER TABLE applications ADD COLUMN '+column+' '+type);
 const client=new Client({intents:[GatewayIntentBits.Guilds,GatewayIntentBits.GuildMembers,GatewayIntentBits.GuildMessages,GatewayIntentBits.MessageContent]});
 const guildManager=require('./manageguild')({client,cfg,db});
 const statistics=require('./statistics')({cfg,db});
@@ -82,7 +83,7 @@ if(action==='cancel'){if(i.user.id!==a.user_id||a.status!=='draft')return i.repl
 if(action==='submit'){if(i.user.id!==a.user_id||a.status!=='draft')return i.reply({content:'Not allowed',ephemeral:true});if(!pics(id).length)return i.reply({content:'Upload at least one screenshot first.',ephemeral:true});await i.deferReply({ephemeral:true});const review=await client.channels.fetch(game(a).reviewChannelId);db.prepare("UPDATE applications SET status='pending' WHERE id=?").run(id);const current=get(id);const msg=await review.send({allowedMentions:{parse:[]},embeds:[reviewEmbed(current)],files:[await cardFile('review',current)],components:[reviewButtons(current)]});db.prepare('UPDATE applications SET review_id=? WHERE id=?').run(msg.id,id);await i.editReply(say('✅ Application submitted.'));return i.channel.delete();}
 const allowed=i.memberPermissions.has(PermissionFlagsBits.Administrator)||i.member.roles.cache.has(div(a).captainRoleId)||i.member.roles.cache.has(div(a).officerRoleId);if(!allowed)return i.reply({content:'Captains only.',ephemeral:true});
 if(action==='units'||action==='unitpage'){if(!['pending','review','accepted','rejected','closed'].includes(a.status))return i.reply({content:'Screenshots unavailable.',ephemeral:true});const page=unitPage(id,action==='unitpage'?Number(parts[2]):0);if(!page)return i.reply({content:'No screenshots uploaded.',ephemeral:true});if(action==='unitpage')return i.update({...page,attachments:[],allowedMentions:{parse:[]}});return i.reply({...page,ephemeral:true,allowedMentions:{parse:[]}});}
-if(action==='open'){if(a.status!=='pending')return i.reply({content:'Already claimed.',ephemeral:true});await i.deferReply({ephemeral:true});const category=await i.guild.channels.fetch(cfg.ticketCategoryId).catch(()=>null);if(!category||category.type!==ChannelType.GuildCategory)throw Error('Configured ticket category is missing or is not a category');const ch=await i.guild.channels.create({name:'ticket-'+id,type:ChannelType.GuildText,parent:category.id,permissionOverwrites:[{id:i.guild.roles.everyone.id,deny:[PermissionFlagsBits.ViewChannel]},{id:a.user_id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},{id:i.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},{id:client.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.ManageChannels]}]});db.prepare("UPDATE applications SET status='review',ticket_id=?,captain_id=? WHERE id=?").run(ch.id,i.user.id,id);await refresh(get(id));await ch.send({content:'<@'+a.user_id+'> <@'+i.user.id+'>',embeds:[embed(get(id))],components:[row(button('accept:'+id,'Accept',ButtonStyle.Success),button('reject:'+id,'Reject',ButtonStyle.Danger),button('transfer:'+id,'Transfer'),button('close:'+id,'Close'))]});const ticketShots=screenshotPayload(id);await ch.send({embeds:ticketShots.embeds,files:ticketShots.files,allowedMentions:{parse:[]}});return i.editReply('Ticket: '+ch);}
+if(action==='open'){if(a.status!=='pending')return i.reply({content:'Already claimed.',ephemeral:true});await i.deferReply({ephemeral:true});const category=await i.guild.channels.fetch(cfg.ticketCategoryId).catch(()=>null);if(!category||category.type!==ChannelType.GuildCategory)throw Error('Configured ticket category is missing or is not a category');const ch=await i.guild.channels.create({name:'ticket-'+id,type:ChannelType.GuildText,parent:category.id,permissionOverwrites:[{id:i.guild.roles.everyone.id,deny:[PermissionFlagsBits.ViewChannel]},{id:a.user_id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},{id:i.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},{id:client.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.ManageChannels]}]});db.prepare("UPDATE applications SET status='review',ticket_id=?,captain_id=?,ticket_opened_at=?,ticket_warned_at=NULL WHERE id=?").run(ch.id,i.user.id,Date.now(),id);await refresh(get(id));await ch.send({content:'<@'+a.user_id+'> <@'+i.user.id+'>',embeds:[embed(get(id))],components:[row(button('accept:'+id,'Accept',ButtonStyle.Success),button('reject:'+id,'Reject',ButtonStyle.Danger),button('transfer:'+id,'Transfer'),button('close:'+id,'Close'))]});const ticketShots=screenshotPayload(id);await ch.send({embeds:ticketShots.embeds,files:ticketShots.files,allowedMentions:{parse:[]}});return i.editReply('Ticket: '+ch);}
 if(a.status!=='review'||i.channelId!==a.ticket_id)return i.reply({content:'Ticket not active.',ephemeral:true});
 if(a.captain_id!==i.user.id&&!i.memberPermissions.has(PermissionFlagsBits.Administrator))return i.reply({content:'Assigned captain only.',ephemeral:true});
 if(action==='accept')return i.reply({content:say('✅ Accept and assign both roles?'),components:[row(button('confirm:'+id,'✅ Confirm',ButtonStyle.Success))],ephemeral:true});
@@ -90,11 +91,54 @@ if(action==='confirm'){await i.deferReply({ephemeral:true});await resolve(a,'acc
 if(action==='reject'||action==='close'){const modal=new ModalBuilder().setCustomId('reason:'+action+':'+id).setTitle('Ticket decision');modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('why').setLabel('Reason').setRequired(true).setStyle(TextInputStyle.Paragraph)));return i.showModal(modal);}
 if(action==='reason'){await i.deferReply({ephemeral:true});await resolve(a,parts[1]==='reject'?'rejected':'closed',i.fields.getTextInputValue('why'),i.user);return i.editReply('Resolved and logged.');}
 if(action==='transfer')return i.reply({content:say('🛡️ Choose a new division'),components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('move:'+id).addOptions(Object.entries(game(a).divisions).filter(([key])=>key!==a.division).map(([value,d])=>({label:d.name,value}))))],ephemeral:true});
-if(action==='move'){const next=i.values[0];if(!game(a).divisions[next])return i.reply({content:'Invalid division.',ephemeral:true});db.prepare("UPDATE applications SET division=?,status='pending',ticket_id=NULL,captain_id=NULL WHERE id=?").run(next,id);await refresh(get(id));await i.reply({content:'Transferred to '+next,ephemeral:true});return i.guild.channels.cache.get(a.ticket_id)?.delete();}
+if(action==='move'){const next=i.values[0];if(!game(a).divisions[next])return i.reply({content:'Invalid division.',ephemeral:true});db.prepare("UPDATE applications SET division=?,status='pending',ticket_id=NULL,captain_id=NULL,ticket_opened_at=NULL,ticket_warned_at=NULL WHERE id=?").run(next,id);await refresh(get(id));await i.reply({content:'Transferred to '+next,ephemeral:true});return i.guild.channels.cache.get(a.ticket_id)?.delete();}
 }catch(e){console.error(e);if(i.isRepliable())await (i.replied||i.deferred?i.followUp({content:'Error: '+e.message,ephemeral:true}):i.reply({content:'Error: '+e.message,ephemeral:true})).catch(()=>{});}});
+const TICKET_LIFETIME=24*60*60*1000;
+const TICKET_WARNING_AT=23*60*60*1000;
+let checkingTicketExpiry=false;
+async function expireOldTickets(){
+ if(checkingTicketExpiry)return;
+ checkingTicketExpiry=true;
+ try{
+  const now=Date.now();
+  // Legacy tickets without a recorded opening time start their timer on the first scan.
+  db.prepare("UPDATE applications SET ticket_opened_at=? WHERE status='review' AND ticket_id IS NOT NULL AND ticket_opened_at IS NULL").run(now);
+  const rows=db.prepare("SELECT * FROM applications WHERE status='review' AND ticket_id IS NOT NULL AND ticket_opened_at<=?").all(now-TICKET_WARNING_AT);
+  for(const a of rows){
+   try{
+    const channel=await client.channels.fetch(a.ticket_id).catch(()=>null);
+    if(!channel){
+      db.prepare("UPDATE applications SET status='closed',reason=? WHERE id=? AND status='review'").run('Ticket channel missing',a.id);
+      await refresh(get(a.id)).catch(()=>{});
+      continue;
+    }
+    const expires=a.ticket_opened_at+TICKET_LIFETIME;
+    if(now<expires){
+      if(a.ticket_warned_at)continue;
+      await channel.send({content:'⚠️ **Ticket expiration notice**\\nThis ticket will close automatically <t:'+Math.floor(expires/1000)+':R> (24 hours after opening). Please complete the review before then.',allowedMentions:{parse:[]}});
+      db.prepare("UPDATE applications SET ticket_warned_at=? WHERE id=? AND status='review'").run(Date.now(),a.id);
+      continue;
+    }
+    // Do not delete a ticket before its advance warning has actually been posted.
+    if(!a.ticket_warned_at){
+      await channel.send({content:'⚠️ **Final notice**\\nThis ticket has reached its 24-hour limit. It will be closed in one hour.',allowedMentions:{parse:[]}});
+      db.prepare("UPDATE applications SET ticket_warned_at=?,ticket_opened_at=? WHERE id=? AND status='review'").run(Date.now(),Date.now()-TICKET_WARNING_AT,a.id);
+      continue;
+    }
+    const changed=db.prepare("UPDATE applications SET status='closed',reason=?,captain_id=NULL WHERE id=? AND status='review' AND ticket_id=?").run('Automatically closed after 24 hours',a.id,a.ticket_id);
+    if(!changed.changes)continue;
+    await refresh(get(a.id)).catch(e=>console.warn('Ticket expiry review refresh failed:',e.message));
+    const log=await client.channels.fetch(game(a).logsChannelId).catch(()=>null);
+    await log?.send({embeds:[new BrandEmbed().setColor(0xed6071).setTitle('Ticket auto-closed #'+a.id).setDescription('Applicant: <@'+a.user_id+'>\\nDivision: '+div(a).name+'\\nReason: 24-hour ticket expiration')],allowedMentions:{parse:[]}}).catch(()=>{});
+    await channel.delete('Automatic 24-hour ticket expiration');
+   }catch(err){console.error('Ticket expiry check failed for #'+a.id,err);}
+  }
+ }catch(err){console.error('Ticket expiry scan failed:',err);}
+ finally{checkingTicketExpiry=false;}
+}
 client.on('guildCreate',async guild=>{if(guild.id!==cfg.guildId){console.warn('Leaving unauthorized server:',guild.id);await guild.leave().catch(e=>console.error('Failed to leave unauthorized server',e));}});
 client.once('ready',async()=>{console.log('Ready: '+client.user.tag);for(const [,g] of client.guilds.cache){if(g.id!==cfg.guildId){console.warn('Leaving unauthorized server:',g.id);await g.leave().catch(e=>console.error('Failed to leave unauthorized server',e));}}const guild=await client.guilds.fetch(cfg.guildId);await brandEmojis.install(guild);await guild.commands.set([{name:'createguildapp',description:'Post a guild application panel in this channel',default_member_permissions:PermissionFlagsBits.Administrator.toString()},{name:'panel',description:'Post recruitment panel (legacy)',default_member_permissions:PermissionFlagsBits.Administrator.toString()},{name:'guildmanagement',description:'Manage members of your assigned guild division'},
 {name:'guildprofile',description:'View an illustrated MOHGS division member profile',options:[{name:'member',description:'Member to view (defaults to yourself)',type:6,required:false},{name:'game',description:'Show profile for a specific game',type:3,required:false,choices:[{name:'Anime Adventures',value:'animeAdventures'},{name:'Anime Crusaders X',value:'animeCrusadersX'}]}]},
 {name:'guildsetroblox',description:'Set your Roblox username in your division roster',options:[{name:'username',description:'Your Roblox username',type:3,required:true},{name:'game',description:'Only update this game (optional if you belong to multiple games)',type:3,required:false,choices:[{name:'Anime Adventures',value:'animeAdventures'},{name:'Anime Crusaders X',value:'animeCrusadersX'}]}]},
-{name:'guildsettimezone',description:'Set your GMT timezone in your division roster',options:[{name:'timezone',description:'Example: GMT+3 or GMT-5:30',type:3,required:true},{name:'game',description:'Only update this game (optional if you belong to multiple games)',type:3,required:false,choices:[{name:'Anime Adventures',value:'animeAdventures'},{name:'Anime Crusaders X',value:'animeCrusadersX'}]}]},{name:'statistic',description:'View illustrated recruitment and guild statistics'}]);setInterval(async()=>{for(const a of db.prepare("SELECT * FROM applications WHERE status='draft' AND created_at<?").all(Date.now()-86400000)){db.prepare("UPDATE applications SET status='expired' WHERE id=?").run(a.id);const ch=await client.channels.fetch(a.channel_id).catch(()=>null);await ch?.delete().catch(()=>{});}},60000);});
+{name:'guildsettimezone',description:'Set your GMT timezone in your division roster',options:[{name:'timezone',description:'Example: GMT+3 or GMT-5:30',type:3,required:true},{name:'game',description:'Only update this game (optional if you belong to multiple games)',type:3,required:false,choices:[{name:'Anime Adventures',value:'animeAdventures'},{name:'Anime Crusaders X',value:'animeCrusadersX'}]}]},{name:'statistic',description:'View illustrated recruitment and guild statistics'}]);setInterval(expireOldTickets,60*1000);expireOldTickets().catch(console.error);setInterval(async()=>{for(const a of db.prepare("SELECT * FROM applications WHERE status='draft' AND created_at<?").all(Date.now()-86400000)){db.prepare("UPDATE applications SET status='expired' WHERE id=?").run(a.id);const ch=await client.channels.fetch(a.channel_id).catch(()=>null);await ch?.delete().catch(()=>{});}},60000);});
 client.login(process.env.DISCORD_TOKEN);
