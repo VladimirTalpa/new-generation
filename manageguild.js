@@ -118,17 +118,18 @@ module.exports=({client,cfg,db})=>{
    const selected=matches[0];
    const username=roblox(i.guild.id,selected,target.id)||'Not set';
    const tz=timezone(i.guild.id,selected,target.id)||'Not set';
-   const names=matches.map(e=>e.d.name);
-   const games=[...new Set(matches.map(e=>e.g.name))];
    const joined=member.joinedTimestamp?'<t:'+Math.floor(member.joinedTimestamp/1000)+':D>':'Unknown';
-   const image=await art('guildprofile',{display:member.displayName,username,timezone:tz,divisions:names.join(' / '),games:games.join(' / ')});
-   const embed=new EmbedBuilder().setColor(0xa879ec)
-     .setTitle('✦ '+member.displayName+' | Guild Profile')
-     .setDescription('**'+games.join(' • ')+'**\\n'+names.map(name=>'• '+name).join('\\n'))
-     .addFields({name:'Member since',value:joined,inline:true},{name:'Profile',value:username==='Not set'||tz==='Not set'?'Incomplete':'Complete',inline:true})
+   const image=await art('guildprofile',{display:member.displayName,username,timezone:tz,division:selected.d.name,game:selected.g.name});
+   const embed=new EmbedBuilder().setColor(0x9872d9)
+     .setTitle('MOHGS  |  Guild Profile')
+     .setDescription('<@'+target.id+'>  •  '+selected.g.name)
+     .addFields(
+       {name:'Member since',value:joined,inline:true},
+       {name:'Profile status',value:username==='Not set'||tz==='Not set'?'Incomplete':'Complete',inline:true}
+     )
      .setImage('attachment://mohgs-guild-profile.png')
-     .setFooter({text:'MOHGS • Guild Management'});
-   if(games.length>1)embed.addFields({name:'Multiple games',value:'Roblox and timezone shown for '+selected.g.name+'. Use the game option to view another.',inline:false});
+     .setFooter({text:'MOHGS  /  MEMBER DIRECTORY'});
+   if(matches.length>1)embed.addFields({name:'Other divisions',value:matches.slice(1).map(e=>e.g.name+' / '+e.d.name).join('\\n').slice(0,1000),inline:false});
    return i.editReply({embeds:[embed],files:[new AttachmentBuilder(image,{name:'mohgs-guild-profile.png'})],allowedMentions:{parse:[]}});
  }
  async function handle(i){
