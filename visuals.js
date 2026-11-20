@@ -38,43 +38,43 @@ const esc = value => String(value ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp
 const cut = (v,n=32) => esc(String(v??'—').slice(0,n));
 const art = async (kind, details={}) => {
   if(kind==='guildprofile'){
+    const display=String(details.display||'MEMBER').slice(0,24);
     const username=String(details.username||'NOT SET').slice(0,22);
-    const timezone=String(details.timezone||'NOT SET').slice(0,20);
-    const display=String(details.display||'MEMBER').slice(0,23);
-    const divisions=String(details.divisions||'NO DIVISION').slice(0,52);
-    const games=String(details.games||'MOHGS').slice(0,45);
-    const initials=display.replace(/[^a-zA-Z0-9 ]/g,'').split(/ +/).map(x=>x[0]||'').join('').slice(0,2).toUpperCase()||'M';
-    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="540" viewBox="0 0 1100 540"><defs>
-      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#100d21"/><stop offset=".55" stop-color="#241333"/><stop offset="1" stop-color="#10192c"/></linearGradient>
-      <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f1b5ff"/><stop offset=".6" stop-color="#a973ff"/><stop offset="1" stop-color="#79c9ff"/></linearGradient>
-      <radialGradient id="aura"><stop stop-color="#c26cfa" stop-opacity=".35"/><stop offset="1" stop-color="#c26cfa" stop-opacity="0"/></radialGradient>
-      <filter id="blur"><feGaussianBlur stdDeviation="22"/></filter>
+    const timezone=String(details.timezone||'NOT SET').slice(0,18);
+    const division=String(details.division||'UNASSIGNED').slice(0,27);
+    const game=String(details.game||'MOHGS').slice(0,32);
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="490" viewBox="0 0 1100 490"><defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#10121f"/><stop offset=".55" stop-color="#21162f"/><stop offset="1" stop-color="#131827"/></linearGradient>
+      <linearGradient id="line" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a77be5"/><stop offset="1" stop-color="#5678a9"/></linearGradient>
+      <radialGradient id="glow"><stop stop-color="#9b5fd0" stop-opacity=".30"/><stop offset="1" stop-color="#9b5fd0" stop-opacity="0"/></radialGradient>
     </defs>
-    <rect width="1100" height="540" rx="30" fill="url(#bg)"/>
-    <circle cx="940" cy="160" r="260" fill="url(#aura)"/>
-    <path d="M660 0L1100 420M780 0L1100 300M0 480L360 0" stroke="#b782ef" stroke-opacity=".10" stroke-width="2"/>
-    <rect x="26" y="25" width="1048" height="490" rx="24" fill="none" stroke="#a77adf" stroke-opacity=".68" stroke-width="2"/>
-    <rect x="40" y="43" width="7" height="454" rx="4" fill="url(#accent)"/>
-    ${textPath('MOHGS',76,103,55,'#ffffff','bold',7)}
-    ${textPath('GUILD MEMBER PROFILE',79,138,19,'#d7a7f2','bold',3)}
-    <path d="M78 161H1023" stroke="#a978d8" stroke-opacity=".6" stroke-width="2"/>
-    <circle cx="909" cy="295" r="144" fill="none" stroke="#c38aff" stroke-opacity=".35" stroke-width="2"/>
-    <circle cx="909" cy="295" r="119" fill="#1a1630" stroke="#b889ff" stroke-width="4"/>
-    <path d="M909 194L931 264L1002 289L931 313L909 386L886 313L814 289L886 264Z" fill="#c183ff" fill-opacity=".13" stroke="#d7a1ff" stroke-opacity=".5" stroke-width="3"/>
-    <circle cx="909" cy="295" r="66" fill="#32234e" stroke="#e0b6ff" stroke-width="3"/>
-    ${textPath(initials,initials.length===1?887:867,318,60,'#f7e7ff','bold')}
-    ${miniIcon('user',80,185)}
-    ${textPath('DISCORD MEMBER',110,204,17,'#c7a6e6','bold',2)}
-    ${textPath(display,80,248,39,'#ffffff','bold')}
-    <path d="M80 274H625" stroke="#a978d8" stroke-opacity=".32" stroke-width="2"/>
-    ${miniIcon('game',80,292)}
-    ${textPath('ROBLOX USERNAME',110,310,17,'#c7a6e6','bold',2)}
-    ${textPath(username,80,350,31,'#ffffff','bold')}
-    ${miniIcon('clock',80,366)}
-    ${textPath('TIMEZONE',110,384,17,'#c7a6e6','bold',2)}
-    ${textPath(timezone,80,424,30,'#ffffff','bold')}
-    ${textPath('DIVISION  /  '+divisions,80,468,17,'#e0b5ff','bold',1)}
-    ${textPath('GAME  /  '+games,80,492,15,'#bca6d5','regular',1)}
+    <rect width="1100" height="490" rx="24" fill="url(#bg)"/>
+    <circle cx="934" cy="230" r="235" fill="url(#glow)"/>
+    <rect x="24" y="24" width="1052" height="442" rx="18" fill="none" stroke="#79629a" stroke-opacity=".65" stroke-width="2"/>
+    <path d="M68 133H1032" stroke="#6f588d" stroke-opacity=".65" stroke-width="2"/>
+    <rect x="68" y="60" width="6" height="45" rx="3" fill="#ba8bea"/>
+    ${textPath('MOHGS',94,91,39,'#f9f6ff','bold',4)}
+    ${textPath('MEMBER IDENTITY  /  GUILD NETWORK',94,117,15,'#b9a6cc','bold',2)}
+    <rect x="68" y="161" width="592" height="83" rx="12" fill="#ffffff" fill-opacity=".045" stroke="#81669c" stroke-opacity=".35"/>
+    ${textPath('DISCORD MEMBER',88,187,15,'#b8a6c9','bold',2)}
+    ${textPath(display,88,224,34,'#ffffff','bold')}
+    <rect x="68" y="265" width="284" height="83" rx="12" fill="#ffffff" fill-opacity=".045" stroke="#81669c" stroke-opacity=".35"/>
+    ${miniIcon('game',85,281,'#c6a1ed')}
+    ${textPath('ROBLOX',116,300,15,'#b8a6c9','bold',1)}
+    ${textPath(username,87,330,25,'#f6f0ff','bold')}
+    <rect x="370" y="265" width="290" height="83" rx="12" fill="#ffffff" fill-opacity=".045" stroke="#81669c" stroke-opacity=".35"/>
+    ${miniIcon('clock',388,281,'#c6a1ed')}
+    ${textPath('TIMEZONE',420,300,15,'#b8a6c9','bold',1)}
+    ${textPath(timezone,390,330,25,'#f6f0ff','bold')}
+    <rect x="68" y="369" width="592" height="66" rx="12" fill="#ffffff" fill-opacity=".045" stroke="#81669c" stroke-opacity=".35"/>
+    ${textPath('DIVISION',87,392,13,'#b8a6c9','bold',2)}
+    ${textPath(division,87,421,24,'#f6f0ff','bold')}
+    <circle cx="871" cy="283" r="138" fill="#151527" stroke="#8b6ab4" stroke-opacity=".6" stroke-width="2"/>
+    <circle cx="871" cy="283" r="108" fill="none" stroke="#8b6ab4" stroke-opacity=".38" stroke-width="2"/>
+    <path d="M871 186L947 216V276Q947 342 871 390Q795 342 795 276V216Z" fill="#2d2146" stroke="url(#line)" stroke-width="5"/>
+    <path d="M871 214L925 235V275Q925 326 871 362Q817 326 817 275V235Z" fill="none" stroke="#c39ae9" stroke-opacity=".5" stroke-width="2"/>
+    <path d="M843 283L864 306L906 260" fill="none" stroke="#e3c6ff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    ${textPath(game,730,449,18,'#d5b7ed','bold',1)}
     </svg>`;
     return sharp(Buffer.from(svg)).png().toBuffer();
   }
