@@ -3,7 +3,7 @@ module.exports = {
   guildId: '1259733702280216638',
   applicationChannelId: '1572875035775996035',
   draftCategoryId: '',
-  ticketCategoryId: '',
+  ticketCategoryId: '1441500200173572298',
   games: {
     animeAdventures: {
       name: 'Anime Adventures',
