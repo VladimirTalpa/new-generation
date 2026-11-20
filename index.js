@@ -115,13 +115,13 @@ async function expireOldTickets(){
     const expires=Math.max(a.ticket_opened_at+TICKET_LIFETIME,a.ticket_warned_at?a.ticket_warned_at+60*60*1000:0);
     if(now<expires){
       if(a.ticket_warned_at)continue;
-      await channel.send({content:'⚠️ **Ticket expiration notice**\\nThis ticket will close automatically <t:'+Math.floor(expires/1000)+':R> (24 hours after opening). Please complete the review before then.',allowedMentions:{parse:[]}});
+      await channel.send({content:'⚠️ **Ticket expiration notice**\nThis ticket will close automatically <t:'+Math.floor(expires/1000)+':R> (24 hours after opening). Please complete the review before then.',allowedMentions:{parse:[]}});
       db.prepare("UPDATE applications SET ticket_warned_at=? WHERE id=? AND status='review'").run(Date.now(),a.id);
       continue;
     }
     // Do not delete a ticket before its advance warning has actually been posted.
     if(!a.ticket_warned_at){
-      await channel.send({content:'⚠️ **Final notice**\\nThis ticket has reached its 24-hour limit. It will be closed in one hour.',allowedMentions:{parse:[]}});
+      await channel.send({content:'⚠️ **Final notice**\nThis ticket has reached its 24-hour limit. It will be closed in one hour.',allowedMentions:{parse:[]}});
       db.prepare("UPDATE applications SET ticket_warned_at=?,ticket_opened_at=? WHERE id=? AND status='review'").run(Date.now(),Date.now()-TICKET_WARNING_AT,a.id);
       continue;
     }
@@ -129,7 +129,7 @@ async function expireOldTickets(){
     if(!changed.changes)continue;
     await refresh(get(a.id)).catch(e=>console.warn('Ticket expiry review refresh failed:',e.message));
     const log=await client.channels.fetch(game(a).logsChannelId).catch(()=>null);
-    await log?.send({embeds:[new BrandEmbed().setColor(0xed6071).setTitle('Ticket auto-closed #'+a.id).setDescription('Applicant: <@'+a.user_id+'>\\nDivision: '+div(a).name+'\\nReason: 24-hour ticket expiration')],allowedMentions:{parse:[]}}).catch(()=>{});
+    await log?.send({embeds:[new BrandEmbed().setColor(0xed6071).setTitle('Ticket auto-closed #'+a.id).setDescription('Applicant: <@'+a.user_id+'>\nDivision: '+div(a).name+'\nReason: 24-hour ticket expiration')],allowedMentions:{parse:[]}}).catch(()=>{});
     await channel.delete('Automatic 24-hour ticket expiration');
    }catch(err){console.error('Ticket expiry check failed for #'+a.id,err);}
   }
