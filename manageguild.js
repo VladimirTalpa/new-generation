@@ -87,25 +87,25 @@ module.exports=({client,cfg,db})=>{
    const requested=i.options.getString('game');
    const selected=requested?[requested]:games;
    if(selected.some(g=>!games.includes(g)))return i.reply({content:'You do not belong to a division in that game.',ephemeral:true});
-   const input=i.options.getString(i.commandName==='setroblox'?'username':'timezone',true).trim();
-   if(i.commandName==='setroblox'&&!/^[a-zA-Z0-9_]{3,20}$/.test(input))return i.reply({content:'Roblox usernames must contain 3–20 letters, numbers or underscores.',ephemeral:true});
-   const value=i.commandName==='settimezone'?normalizeTimezone(input):input;
+   const input=i.options.getString(i.commandName==='guildsetroblox'?'username':'timezone',true).trim();
+   if(i.commandName==='guildsetroblox'&&!/^[a-zA-Z0-9_]{3,20}$/.test(input))return i.reply({content:'Roblox usernames must contain 3–20 letters, numbers or underscores.',ephemeral:true});
+   const value=i.commandName==='guildsettimezone'?normalizeTimezone(input):input;
    if(!value)return i.reply({content:'Invalid timezone. Examples: GMT+3, GMT-5, GMT+5:30.',ephemeral:true});
    const save=db.transaction(()=>{
      for(const gameKey of selected){
        const e=memberships.find(x=>x.gameKey===gameKey);
        const old=profile.get(i.guild.id,gameKey,i.user.id);
-       const username=i.commandName==='setroblox'?value:(old?.roblox_username||roblox(i.guild.id,e,i.user.id)||'Not set');
-       const tz=i.commandName==='settimezone'?value:(old?.timezone||timezone(i.guild.id,e,i.user.id));
+       const username=i.commandName==='guildsetroblox'?value:(old?.roblox_username||roblox(i.guild.id,e,i.user.id)||'Not set');
+       const tz=i.commandName==='guildsettimezone'?value:(old?.timezone||timezone(i.guild.id,e,i.user.id));
        db.prepare('INSERT INTO guild_member_profiles(guild_id,game,user_id,roblox_username,updated_by,updated_at,timezone) VALUES(?,?,?,?,?,?,?) ON CONFLICT(guild_id,game,user_id) DO UPDATE SET roblox_username=excluded.roblox_username,timezone=excluded.timezone,updated_by=excluded.updated_by,updated_at=excluded.updated_at').run(i.guild.id,gameKey,i.user.id,username,i.user.id,Date.now(),tz);
      }
    });
    save();
    const destinations=memberships.filter(e=>selected.includes(e.gameKey)).map(e=>e.g.name+' / '+e.d.name);
-   return i.reply({content:'Profile updated. '+(i.commandName==='setroblox'?'Roblox: **':'Timezone: **')+value+'**\\nVisible in captain/officer rosters for: '+destinations.join(', '),ephemeral:true});
+   return i.reply({content:'Profile updated. '+(i.commandName==='guildsetroblox'?'Roblox: **':'Timezone: **')+value+'**\\nVisible in captain/officer rosters for: '+destinations.join(', '),ephemeral:true});
  }
  async function handle(i){
-   if(i.isChatInputCommand()&&['setroblox','settimezone'].includes(i.commandName))return selfProfile(i);
+   if(i.isChatInputCommand()&&['guildsetroblox','guildsettimezone'].includes(i.commandName))return selfProfile(i);
    if(i.isChatInputCommand()&&i.commandName==='guildmanagement'){
      await i.deferReply({ephemeral:true});const allowed=uniqueEntries(i);if(!allowed.length)return i.editReply({content:'Access denied: you need a captain/officer role AND your numbered division role. For a full roster, enable Server Members Intent in Discord Developer Portal.'});
      if(allowed.length===1){await ensureRoster(i.guild);return i.editReply(await render(i,allowed[0]));}
