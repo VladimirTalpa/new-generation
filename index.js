@@ -112,7 +112,7 @@ async function expireOldTickets(){
       await refresh(get(a.id)).catch(()=>{});
       continue;
     }
-    const expires=a.ticket_opened_at+TICKET_LIFETIME;
+    const expires=Math.max(a.ticket_opened_at+TICKET_LIFETIME,a.ticket_warned_at?a.ticket_warned_at+60*60*1000:0);
     if(now<expires){
       if(a.ticket_warned_at)continue;
       await channel.send({content:'⚠️ **Ticket expiration notice**\\nThis ticket will close automatically <t:'+Math.floor(expires/1000)+':R> (24 hours after opening). Please complete the review before then.',allowedMentions:{parse:[]}});
