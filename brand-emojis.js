@@ -11,13 +11,19 @@ const icons={
  check:['#81e4c6','<circle cx="32" cy="32" r="22"/><path d="M19 32L28 41L46 23"/>'],
  search:['#c8a2ff','<circle cx="27" cy="27" r="14"/><path d="M38 38L52 52"/>'],
  cross:['#ff8da9','<circle cx="32" cy="32" r="22"/><path d="M23 23L41 41M41 23L23 41"/>'],
- camera:['#c7a6ff','<rect x="9" y="19" width="46" height="32" rx="6"/><path d="M20 19L24 12H40L44 19"/><circle cx="32" cy="35" r="10"/>']
+ camera:['#c7a6ff','<rect x="9" y="19" width="46" height="32" rx="6"/><path d="M20 19L24 12H40L44 19"/><circle cx="32" cy="35" r="10"/>'],
+ spark:['#d6a8ff','<path d="M32 8L37 26L56 32L37 38L32 56L26 38L8 32L26 26Z"/>'],
+ info:['#bba2ff','<circle cx="32" cy="32" r="22"/><path d="M32 28V43M32 20V21"/>'],
+ arrow:['#bca2ff','<path d="M10 32H51M37 18L51 32L37 46"/>'],
+ chart:['#c8a0ff','<path d="M11 51H54M17 45V32H26V45M29 45V23H38V45M41 45V13H50V45"/>']
 };
-const emojiToIcon={'🎟️':'ticket','🎟':'ticket','📋':'form','👤':'user','🎮':'game','🕹️':'game','🕹':'game','🕒':'clock','⏳':'clock','🛡️':'shield','🛡':'shield','📌':'pin','✅':'check','🔎':'search','❌':'cross','📸':'camera'};
+const fallback={ticket:'🎟️',form:'📋',user:'👤',game:'🎮',clock:'🕒',shield:'🛡️',pin:'📌',check:'✅',search:'🔎',cross:'❌',camera:'📸',spark:'✨',info:'ℹ️',arrow:'➡️',chart:'📊'};
+const emojiToIcon={'🎟️':'ticket','🎟':'ticket','📋':'form','👤':'user','🎮':'game','🕹️':'game','🕹':'game','🕒':'clock','⏳':'clock','🛡️':'shield','🛡':'shield','📌':'pin','✅':'check','🔎':'search','❌':'cross','📸':'camera','✨':'spark','ℹ️':'info','➡️':'arrow','📊':'chart'};
 const names=Object.fromEntries(Object.keys(icons).map(k=>[k,'mohgs_'+k]));
 const ids=new Map();
-const token=name=>ids.has(name)?'<:'+names[name]+':'+ids.get(name)+'>':Object.entries(emojiToIcon).find(([,v])=>v===name)?.[0]||'✦';
-const replace=text=>typeof text==='string'?text.replace(/🎟️|🕹️|🛡️|🎟|🕹|🛡|📋|👤|🎮|🕒|⏳|📌|✅|🔎|❌|📸/gu,e=>token(emojiToIcon[e])):text;
+const token=name=>ids.has(name)?'<:'+names[name]+':'+ids.get(name)+'>':fallback[name]||'✦';
+const replace=text=>typeof text==='string'?text.replace(/🎟️|🕹️|🛡️|ℹ️|➡️|🎟|🕹|🛡|📋|👤|🎮|🕒|⏳|📌|✅|🔎|❌|📸|✨|📊/gu,e=>token(emojiToIcon[e])):text;
+const ready=()=>ids.size;
 const buttonEmoji=text=>{if(typeof text!=='string')return null;const found=Object.keys(emojiToIcon).find(e=>text.startsWith(e+' '));if(!found)return null;const key=emojiToIcon[found];return {label:text.slice(found.length).trim(),emoji:ids.has(key)?{id:ids.get(key),name:names[key]}:found};};
 const render=async name=>{
  const [color,paths]=icons[name];
@@ -38,4 +44,4 @@ async function install(guild){
   console.log('MOHGS custom emojis available:',ids.size+'/'+Object.keys(icons).length);
  }catch(e){console.warn('MOHGS emoji access unavailable:',e.message);}
 }
-module.exports={install,replace,buttonEmoji};
+module.exports={install,replace,buttonEmoji,token,ready};
