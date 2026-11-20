@@ -103,7 +103,7 @@ module.exports=({client,cfg,db})=>{
    });
    save();
    const destinations=memberships.filter(e=>selected.includes(e.gameKey)).map(e=>e.g.name+' / '+e.d.name);
-   return i.reply({content:'Profile updated. '+(i.commandName==='guildsetroblox'?'Roblox: **':'Timezone: **')+value+'**\\nVisible in captain/officer rosters for: '+destinations.join(', '),ephemeral:true});
+   return i.reply({content:'Profile updated. '+(i.commandName==='guildsetroblox'?'Roblox: **':'Timezone: **')+value+'**\nVisible in captain/officer rosters for: '+destinations.join(', '),ephemeral:true});
  }
  async function showGuildProfile(i){
    await i.deferReply();
@@ -129,7 +129,7 @@ module.exports=({client,cfg,db})=>{
      )
      .setImage('attachment://mohgs-guild-profile.png')
      .setFooter({text:'MOHGS  /  MEMBER DIRECTORY'});
-   if(matches.length>1)embed.addFields({name:'Other divisions',value:matches.slice(1).map(e=>e.g.name+' / '+e.d.name).join('\\n').slice(0,1000),inline:false});
+   if(matches.length>1)embed.addFields({name:'Other divisions',value:matches.slice(1).map(e=>e.g.name+' / '+e.d.name).join('\n').slice(0,1000),inline:false});
    return i.editReply({embeds:[embed],files:[new AttachmentBuilder(image,{name:'mohgs-guild-profile.png'})],allowedMentions:{parse:[]}});
  }
  async function handle(i){
