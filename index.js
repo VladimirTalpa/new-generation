@@ -58,7 +58,7 @@ const unitPage=(id,page=0)=>{
 const active=user=>db.prepare("SELECT id FROM applications WHERE user_id=? AND status IN ('draft','pending','review')").get(user);
 async function refresh(a){if(!a.review_id)return;const c=await client.channels.fetch(game(a).reviewChannelId);const m=await c.messages.fetch(a.review_id).catch(()=>null);await m?.edit({embeds:[reviewEmbed(a)],files:[await cardFile('review',a)],components:[reviewButtons(a)],allowedMentions:{parse:[]}});}
 async function resolve(a,status,reason,actor){if(status==='accepted'){const member=await client.guilds.cache.get(a.guild_id).members.fetch(a.user_id);const roles=[div(a).divisionRoleId,div(a).memberRoleId];if(roles.some(x=>!x||x.includes('_ROLE')))throw Error('Configure both division roles first');for(const role of roles)await member.roles.add(role);}
-db.prepare('UPDATE applications SET status=?,reason=?,captain_id=? WHERE id=?').run(status,reason||'',actor.id,a.id);a=get(a.id);await refresh(a);
+db.prepare('UPDATE applications SET status=?,reason=?,captain_id=?,division=? WHERE id=? AND status=\'review\'').run(status,reason||'',actor.id,a.division,a.id);a=get(a.id);await refresh(a);
 const transcript=['Application #'+a.id,'Player '+a.user_id,'Roblox '+a.username,'Timezone '+(a.timezone||'Not set'),'Game '+game(a).name,'Division '+div(a).name,'Status '+status,'Captain '+actor.id,'Reason '+(reason||'')];
 if(a.ticket_id){const ch=await client.channels.fetch(a.ticket_id).catch(()=>null);if(ch){let before;for(let n=0;n<10;n++){const batch=await ch.messages.fetch({limit:100,...(before?{before}:{})});if(!batch.size)break;transcript.push(...[...batch.values()].reverse().map(m=>new Date(m.createdTimestamp).toISOString()+' '+m.author.tag+': '+m.content+' '+[...m.attachments.values()].map(x=>x.url).join(' ')));before=batch.last().id;if(batch.size<100)break;}}}
 const log=await client.channels.fetch(game(a).logsChannelId);await log.send({embeds:[embed(a).setTitle('Application '+status.toUpperCase()).addFields({name:'Reviewed by',value:'<@'+actor.id+'>'},{name:'Reason',value:reason||'—'})],files:[new AttachmentBuilder(Buffer.from(transcript.join('\n')),{name:'application-'+a.id+'.txt'})]});
@@ -86,8 +86,22 @@ if(action==='units'||action==='unitpage'){if(!['pending','review','accepted','re
 if(action==='open'){if(a.status!=='pending')return i.reply({content:'Already claimed.',ephemeral:true});await i.deferReply({ephemeral:true});const category=await i.guild.channels.fetch(cfg.ticketCategoryId).catch(()=>null);if(!category||category.type!==ChannelType.GuildCategory)throw Error('Configured ticket category is missing or is not a category');const ch=await i.guild.channels.create({name:'ticket-'+id,type:ChannelType.GuildText,parent:category.id,permissionOverwrites:[{id:i.guild.roles.everyone.id,deny:[PermissionFlagsBits.ViewChannel]},{id:a.user_id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},{id:i.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},{id:client.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.ManageChannels]}]});db.prepare("UPDATE applications SET status='review',ticket_id=?,captain_id=?,ticket_opened_at=?,ticket_warned_at=NULL WHERE id=?").run(ch.id,i.user.id,Date.now(),id);await refresh(get(id));await ch.send({content:'<@'+a.user_id+'> <@'+i.user.id+'>',embeds:[embed(get(id))],components:[row(button('accept:'+id,'Accept',ButtonStyle.Success),button('reject:'+id,'Reject',ButtonStyle.Danger),button('transfer:'+id,'Transfer'),button('close:'+id,'Close'))]});const ticketShots=screenshotPayload(id);await ch.send({embeds:ticketShots.embeds,files:ticketShots.files,allowedMentions:{parse:[]}});return i.editReply('Ticket: '+ch);}
 if(a.status!=='review'||i.channelId!==a.ticket_id)return i.reply({content:'Ticket not active.',ephemeral:true});
 if(a.captain_id!==i.user.id&&!i.memberPermissions.has(PermissionFlagsBits.Administrator))return i.reply({content:'Assigned captain only.',ephemeral:true});
-if(action==='accept')return i.reply({content:say('✅ Accept and assign both roles?'),components:[row(button('confirm:'+id,'✅ Confirm',ButtonStyle.Success))],ephemeral:true});
-if(action==='confirm'){await i.deferReply({ephemeral:true});await resolve(a,'accepted','',i.user);return i.editReply('Accepted and logged.');}
+if(action==='accept'){
+ const choices=Object.entries(game(a).divisions).map(([value,d])=>({label:d.name,value,description:'Assign division role and guild member role'}));
+ return i.reply({content:'**Accept application**\\nChoose the division to assign. The member will also receive the matching guild member role.',components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('assign:'+id).setPlaceholder('Select destination division').addOptions(choices))],ephemeral:true});
+}
+if(action==='assign'){
+ const next=i.values[0],selected=game(a).divisions[next];
+ if(!selected)return i.reply({content:'Invalid division selection.',ephemeral:true});
+ return i.update({content:'**Confirm admission**\\nDivision: **'+selected.name+'**\\nRoles: <@&'+selected.divisionRoleId+'> and <@&'+selected.memberRoleId+'>',components:[row(button('confirm:'+id+':'+next,'Confirm admission',ButtonStyle.Success),button('accept:'+id,'Change division'))],allowedMentions:{parse:[]}});
+}
+if(action==='confirm'){
+ const next=parts[2],selected=game(a).divisions[next];
+ if(!selected)return i.reply({content:'Please select a division using the Accept button first.',ephemeral:true});
+ await i.deferReply({ephemeral:true});
+ await resolve({...a,division:next},'accepted','',i.user);
+ return i.editReply('Accepted into **'+selected.name+'**. Both roles assigned and logged.');
+}
 if(action==='reject'||action==='close'){const modal=new ModalBuilder().setCustomId('reason:'+action+':'+id).setTitle('Ticket decision');modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('why').setLabel('Reason').setRequired(true).setStyle(TextInputStyle.Paragraph)));return i.showModal(modal);}
 if(action==='reason'){await i.deferReply({ephemeral:true});await resolve(a,parts[1]==='reject'?'rejected':'closed',i.fields.getTextInputValue('why'),i.user);return i.editReply('Resolved and logged.');}
 if(action==='transfer')return i.reply({content:say('🛡️ Choose a new division'),components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('move:'+id).addOptions(Object.entries(game(a).divisions).filter(([key])=>key!==a.division).map(([value,d])=>({label:d.name,value}))))],ephemeral:true});
