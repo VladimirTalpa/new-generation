@@ -18,7 +18,17 @@ const EXTRA_REVIEW_ROLE='1569966400062226512';
 const WELCOME_ROLES=new Set(['1567572521782480977','1571768396897456220']);
 const RECRUITMENT_LINK='https://discord.com/channels/1259733702280216638/1573248921021579374';
 const isFull=(g,d)=>/\bfull\b/i.test(requirementText(g,d));
-const reviewStaffRoles=a=>[div(a).captainRoleId,div(a).officerRoleId,EXTRA_REVIEW_ROLE];
+const reviewStaffRoles=a=>[div(a).captainRoleId,div(a).officerRoleId,EXTRA_REVIEW_ROLE].filter(Boolean);
+async function staffOverwrites(guild,a){
+ const ids=[...new Set(reviewStaffRoles(a))];
+ const roles=await guild.roles.fetch();
+ const valid=ids.filter(id=>roles.has(id));
+ for(const id of ids.filter(id=>!roles.has(id)))console.warn('Missing reviewer role in guild:',id,'application:',a.id);
+ return valid.map(id=>({id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages,PermissionFlagsBits.ReadMessageHistory]}));
+}
+process.on('unhandledRejection',err=>console.error('[Unhandled rejection]',err));
+process.on('uncaughtException',err=>{console.error('[Uncaught exception]',err);process.exitCode=1;});
+
 async function clearApplicantRole(a){
  const guild=await client.guilds.fetch(a.guild_id).catch(()=>null);
  const member=await guild?.members.fetch(a.user_id).catch(()=>null);
@@ -76,7 +86,7 @@ if(a.ticket_id){const ch=await client.channels.fetch(a.ticket_id).catch(()=>null
 const log=await client.channels.fetch(game(a).logsChannelId);await log.send({embeds:[embed(a).setTitle('Application '+status.toUpperCase()).addFields({name:'Reviewed by',value:'<@'+actor.id+'>'},{name:'Reason',value:reason||'—'})],files:[new AttachmentBuilder(Buffer.from(transcript.join('\n')),{name:'application-'+a.id+'.txt'})]});
 await client.users.fetch(a.user_id).then(u=>u.send('Your '+game(a).name+' application was **'+status+'**.'+(reason?' Reason: '+reason:''))).catch(()=>{});
 if(a.ticket_id){const ch=await client.channels.fetch(a.ticket_id).catch(()=>null);await ch?.delete().catch(()=>{});}}
-client.on('guildMemberUpdate',async(oldMember,newMember)=>{
+client.on('guildMemberUpdate',async(oldMember,newMember)=>{try{
  if(newMember.guild.id!==cfg.guildId||newMember.user.bot)return;
  const gained=[...WELCOME_ROLES].some(id=>!oldMember.roles.cache.has(id)&&newMember.roles.cache.has(id));
  if(!gained)return;
@@ -84,13 +94,14 @@ client.on('guildMemberUpdate',async(oldMember,newMember)=>{
  .setDescription('Hello and welcome to **MOHGS**!\n\nInterested in joining a guild for your selected games? Visit our [Guild Recruitment channel]('+RECRUITMENT_LINK+') and submit an application.')
  .setFooter({text:'MOHGS • Guild Recruitment'});
  await newMember.send({embeds:[embed]}).catch(e=>console.warn('Welcome DM not delivered:',e.message));
+}catch(err){console.error('Member welcome handler failed:',err);}
 });
-client.on('messageCreate',async m=>{if(!m.guild||m.guild.id!==cfg.guildId||m.author.bot)return;const a=db.prepare("SELECT * FROM applications WHERE channel_id=? AND status='draft'").get(m.channel.id);if(!a||a.user_id!==m.author.id)return;let saved=0;for(const file of m.attachments.values()){if(!file.contentType?.startsWith('image/')||pics(a.id).length>=5)continue;try{const r=await fetch(file.url);const bytes=Buffer.from(await r.arrayBuffer());if(!r.ok||bytes.length>10485760)throw Error('Image exceeds 10 MB or failed to download');const dir='data/images/'+a.id;fs.mkdirSync(dir,{recursive:true});const dest=path.join(dir,file.id+'.png');fs.writeFileSync(dest,bytes);db.prepare('INSERT INTO images(application_id,filename,filepath) VALUES(?,?,?)').run(a.id,file.name,dest);saved++;}catch(e){await m.reply(e.message);}}
+client.on('messageCreate',async m=>{try{if(!m.guild||m.guild.id!==cfg.guildId||m.author.bot)return;const a=db.prepare("SELECT * FROM applications WHERE channel_id=? AND status='draft'").get(m.channel.id);if(!a||a.user_id!==m.author.id)return;let saved=0;for(const file of m.attachments.values()){if(!file.contentType?.startsWith('image/')||pics(a.id).length>=5)continue;try{const r=await fetch(file.url);const bytes=Buffer.from(await r.arrayBuffer());if(!r.ok||bytes.length>10485760)throw Error('Image exceeds 10 MB or failed to download');const dir='data/images/'+a.id;fs.mkdirSync(dir,{recursive:true});const dest=path.join(dir,file.id+'.png');fs.writeFileSync(dest,bytes);db.prepare('INSERT INTO images(application_id,filename,filepath) VALUES(?,?,?)').run(a.id,file.name,dest);saved++;}catch(e){await m.reply(e.message);}}
  if(saved){
   const count=pics(a.id).length;
   await m.channel.send({content:'<@'+a.user_id+'> **'+count+'/5 screenshots received.** Please press **Submit Application** above to finish your application. If you do not submit within one hour, this channel will be removed.',allowedMentions:{users:[a.user_id]}}).catch(console.error);
   db.prepare('UPDATE applications SET screenshot_at=COALESCE(screenshot_at,?) WHERE id=? AND status=\'draft\'').run(Date.now(),a.id);
- }
+ }catch(err){console.error('Screenshot message handler failed:',err);}
 });
 client.on('interactionCreate',async i=>{try{if(!i.inGuild()||i.guildId!==cfg.guildId){if(i.isRepliable())await i.reply({content:'This bot is available only in the Mohgs Discord server.',ephemeral:true}).catch(()=>{});return;}
 if((i.isChatInputCommand()&&['guildmanagement','guildsetroblox','guildsettimezone','guildprofile'].includes(i.commandName))||i.customId?.startsWith('mg:')){await guildManager.handle(i);return;}
@@ -112,9 +123,9 @@ if(action==='cancel'){if(i.user.id!==a.user_id||a.status!=='draft')return i.repl
 if(action==='submit'){if(i.user.id!==a.user_id||a.status!=='draft')return i.reply({content:'Not allowed',ephemeral:true});if(!pics(id).length)return i.reply({content:'Upload at least one screenshot first.',ephemeral:true});await i.deferReply({ephemeral:true});const review=await client.channels.fetch(game(a).reviewChannelId);db.prepare("UPDATE applications SET status='pending' WHERE id=?").run(id);const current=get(id);const msg=await review.send({allowedMentions:{parse:[]},embeds:[reviewEmbed(current)],files:[await cardFile('review',current)],components:[reviewButtons(current)]});db.prepare('UPDATE applications SET review_id=? WHERE id=?').run(msg.id,id);await i.editReply(say('✅ Application submitted.'));return i.channel.delete();}
 const allowed=i.memberPermissions.has(PermissionFlagsBits.Administrator)||reviewStaffRoles(a).some(role=>i.member.roles.cache.has(role));if(!allowed)return i.reply({content:'Captains only.',ephemeral:true});
 if(action==='units'||action==='unitpage'){if(!['pending','review','accepted','rejected','closed'].includes(a.status))return i.reply({content:'Screenshots unavailable.',ephemeral:true});const page=unitPage(id,action==='unitpage'?Number(parts[2]):0);if(!page)return i.reply({content:'No screenshots uploaded.',ephemeral:true});if(action==='unitpage')return i.update({...page,attachments:[],allowedMentions:{parse:[]}});return i.reply({...page,ephemeral:true,allowedMentions:{parse:[]}});}
-if(action==='open'){if(a.status!=='pending')return i.reply({content:'Already claimed.',ephemeral:true});await i.deferReply({ephemeral:true});const category=await i.guild.channels.fetch(cfg.ticketCategoryId).catch(()=>null);if(!category||category.type!==ChannelType.GuildCategory)throw Error('Configured ticket category is missing or is not a category');const ch=await i.guild.channels.create({name:'ticket-'+id,type:ChannelType.GuildText,parent:category.id,permissionOverwrites:[{id:i.guild.roles.everyone.id,deny:[PermissionFlagsBits.ViewChannel]},{id:a.user_id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},...reviewStaffRoles(a).map(role=>({id:role,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages,PermissionFlagsBits.ReadMessageHistory]})),{id:i.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},{id:client.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.ManageChannels]}]});db.prepare("UPDATE applications SET status='review',ticket_id=?,captain_id=?,ticket_opened_at=?,ticket_warned_at=NULL WHERE id=?").run(ch.id,i.user.id,Date.now(),id);await refresh(get(id));await ch.send({content:'<@'+a.user_id+'> <@'+i.user.id+'>',embeds:[embed(get(id))],components:[row(button('accept:'+id,'Assign Role',ButtonStyle.Success),button('reject:'+id,'Reject',ButtonStyle.Danger),button('transfer:'+id,'Transfer'),button('close:'+id,'Close'))]});const ticketShots=screenshotPayload(id);await ch.send({embeds:ticketShots.embeds,files:ticketShots.files,allowedMentions:{parse:[]}});return i.editReply('Ticket: '+ch);}
+if(action==='open'){if(a.status!=='pending')return i.reply({content:'Already claimed.',ephemeral:true});await i.deferReply({ephemeral:true});const category=await i.guild.channels.fetch(cfg.ticketCategoryId).catch(()=>null);if(!category||category.type!==ChannelType.GuildCategory)throw Error('Configured ticket category is missing or is not a category');const ch=await i.guild.channels.create({name:'ticket-'+id,type:ChannelType.GuildText,parent:category.id,permissionOverwrites:[{id:i.guild.roles.everyone.id,deny:[PermissionFlagsBits.ViewChannel]},{id:a.user_id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},...(await staffOverwrites(i.guild,a)),{id:i.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages]},{id:client.user.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.ManageChannels]}]});db.prepare("UPDATE applications SET status='review',ticket_id=?,captain_id=?,ticket_opened_at=?,ticket_warned_at=NULL WHERE id=?").run(ch.id,i.user.id,Date.now(),id);await refresh(get(id));await ch.send({content:'<@'+a.user_id+'> <@'+i.user.id+'>',embeds:[embed(get(id))],components:[row(button('accept:'+id,'Assign Role',ButtonStyle.Success),button('reject:'+id,'Reject',ButtonStyle.Danger),button('transfer:'+id,'Transfer'),button('close:'+id,'Close'))]});const ticketShots=screenshotPayload(id);await ch.send({embeds:ticketShots.embeds,files:ticketShots.files,allowedMentions:{parse:[]}});return i.editReply('Ticket: '+ch);}
 if(a.status!=='review'||i.channelId!==a.ticket_id)return i.reply({content:'Ticket not active.',ephemeral:true});
-if(a.captain_id!==i.user.id&&!i.memberPermissions.has(PermissionFlagsBits.Administrator)&&!i.member.roles.cache.has(EXTRA_REVIEW_ROLE))return i.reply({content:'Only the assigned reviewer can make a decision.',ephemeral:true});
+// All authorized division reviewers can resolve the shared ticket.
 if(action==='accept'){
  const choices=Object.entries(game(a).divisions).map(([value,d])=>({label:d.name,value,description:'Assign division role and guild member role'}));
  return i.reply({content:'**Accept application**\nChoose the division to assign. The member will also receive the matching guild member role.',components:[new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('assign:'+id).setPlaceholder('Select destination division').addOptions(choices))],ephemeral:true});
@@ -140,24 +151,26 @@ const TICKET_LIFETIME=24*60*60*1000;
 async function remindOpenTickets(){
  const now=Date.now(),interval=2*60*60*1000;
  const rows=db.prepare("SELECT * FROM applications WHERE status='review' AND ticket_id IS NOT NULL AND captain_id IS NOT NULL AND ticket_opened_at<=? AND (captain_reminded_at IS NULL OR captain_reminded_at<=?)").all(now-interval,now-interval);
- for(const a of rows){
+ for(const a of rows){try{
   const ch=await client.channels.fetch(a.ticket_id).catch(()=>null);
   if(!ch)continue;
   try{
    await ch.send({content:'<@'+a.captain_id+'> **Reminder:** This application is still open. Please assign the member role or resolve the ticket.',allowedMentions:{users:[a.captain_id]}});
    db.prepare('UPDATE applications SET captain_reminded_at=? WHERE id=? AND status=\'review\'').run(Date.now(),a.id);
   }catch(e){console.warn('Captain reminder failed:',e.message);}
+ }catch(err){console.error('Reminder scan failed for ticket',a.id,err);}
  }
 }
 async function expireUnsubmittedDrafts(){
  const now=Date.now();
  const rows=db.prepare("SELECT * FROM applications WHERE status='draft' AND ((screenshot_at IS NOT NULL AND screenshot_at<=?) OR (screenshot_at IS NULL AND created_at<=?))").all(now-60*60*1000,now-24*60*60*1000);
- for(const a of rows){
+ for(const a of rows){try{
   const changed=db.prepare("UPDATE applications SET status='expired' WHERE id=? AND status='draft'").run(a.id);
   if(!changed.changes)continue;
   await clearApplicantRole(a);
   const ch=await client.channels.fetch(a.channel_id).catch(()=>null);
   await ch?.delete('Application not submitted within deadline').catch(console.error);
+ }catch(err){console.error('Draft cleanup failed for application',a.id,err);}
  }
 }
 const TICKET_WARNING_AT=23*60*60*1000;
@@ -202,9 +215,10 @@ async function expireOldTickets(){
  }catch(err){console.error('Ticket expiry scan failed:',err);}
  finally{checkingTicketExpiry=false;}
 }
-client.on('guildCreate',async guild=>{if(guild.id!==cfg.guildId){console.warn('Leaving unauthorized server:',guild.id);await guild.leave().catch(e=>console.error('Failed to leave unauthorized server',e));}});
-client.once('ready',async()=>{console.log('Ready: '+client.user.tag);for(const [,g] of client.guilds.cache){if(g.id!==cfg.guildId){console.warn('Leaving unauthorized server:',g.id);await g.leave().catch(e=>console.error('Failed to leave unauthorized server',e));}}const guild=await client.guilds.fetch(cfg.guildId);await brandEmojis.install(guild);await guild.commands.set([{name:'createguildapp',description:'Post a guild application panel in this channel',default_member_permissions:PermissionFlagsBits.Administrator.toString()},{name:'panel',description:'Post recruitment panel (legacy)',default_member_permissions:PermissionFlagsBits.Administrator.toString()},{name:'guildmanagement',description:'Manage members of your assigned guild division'},
+client.on('guildCreate',async guild=>{try{if(guild.id!==cfg.guildId){console.warn('Leaving unauthorized server:',guild.id);await guild.leave().catch(e=>console.error('Failed to leave unauthorized server',e));}}catch(err){console.error('guildCreate handler failed:',err);}});
+client.once('ready',async()=>{try{console.log('Ready: '+client.user.tag);for(const [,g] of client.guilds.cache){if(g.id!==cfg.guildId){console.warn('Leaving unauthorized server:',g.id);await g.leave().catch(e=>console.error('Failed to leave unauthorized server',e));}}const guild=await client.guilds.fetch(cfg.guildId);await brandEmojis.install(guild);await guild.commands.set([{name:'createguildapp',description:'Post a guild application panel in this channel',default_member_permissions:PermissionFlagsBits.Administrator.toString()},{name:'panel',description:'Post recruitment panel (legacy)',default_member_permissions:PermissionFlagsBits.Administrator.toString()},{name:'guildmanagement',description:'Manage members of your assigned guild division'},
 {name:'guildprofile',description:'View an illustrated MOHGS division member profile',options:[{name:'member',description:'Member to view (defaults to yourself)',type:6,required:false},{name:'game',description:'Show profile for a specific game',type:3,required:false,choices:[{name:'Anime Adventures',value:'animeAdventures'},{name:'Anime Crusaders X',value:'animeCrusadersX'}]}]},
 {name:'guildsetroblox',description:'Set your Roblox username in your division roster',options:[{name:'username',description:'Your Roblox username',type:3,required:true},{name:'game',description:'Only update this game (optional if you belong to multiple games)',type:3,required:false,choices:[{name:'Anime Adventures',value:'animeAdventures'},{name:'Anime Crusaders X',value:'animeCrusadersX'}]}]},
-{name:'guildsettimezone',description:'Set your GMT timezone in your division roster',options:[{name:'timezone',description:'Example: GMT+3 or GMT-5:30',type:3,required:true},{name:'game',description:'Only update this game (optional if you belong to multiple games)',type:3,required:false,choices:[{name:'Anime Adventures',value:'animeAdventures'},{name:'Anime Crusaders X',value:'animeCrusadersX'}]}]},{name:'statistic',description:'View illustrated recruitment and guild statistics'}]);setInterval(expireOldTickets,60*1000);expireOldTickets().catch(console.error);setInterval(()=>remindOpenTickets().catch(console.error),60*1000);setInterval(()=>expireUnsubmittedDrafts().catch(console.error),60*1000);expireUnsubmittedDrafts().catch(console.error);});
-client.login(process.env.DISCORD_TOKEN);
+{name:'guildsettimezone',description:'Set your GMT timezone in your division roster',options:[{name:'timezone',description:'Example: GMT+3 or GMT-5:30',type:3,required:true},{name:'game',description:'Only update this game (optional if you belong to multiple games)',type:3,required:false,choices:[{name:'Anime Adventures',value:'animeAdventures'},{name:'Anime Crusaders X',value:'animeCrusadersX'}]}]},{name:'statistic',description:'View illustrated recruitment and guild statistics'}]);setInterval(expireOldTickets,60*1000);expireOldTickets().catch(console.error);setInterval(()=>remindOpenTickets().catch(console.error),60*1000);setInterval(()=>expireUnsubmittedDrafts().catch(console.error),60*1000);expireUnsubmittedDrafts().catch(console.error);}catch(err){console.error('Bot initialization failed:',err);}});
+client.on('error',err=>console.error('Discord client error:',err));
+client.login(process.env.DISCORD_TOKEN).catch(err=>{console.error('Discord login failed:',err);process.exitCode=1;});
