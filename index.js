@@ -101,6 +101,7 @@ client.on('messageCreate',async m=>{try{if(!m.guild||m.guild.id!==cfg.guildId||m
   const count=pics(a.id).length;
   await m.channel.send({content:'<@'+a.user_id+'> **'+count+'/5 screenshots received.** Please press **Submit Application** above to finish your application. If you do not submit within one hour, this channel will be removed.',allowedMentions:{users:[a.user_id]}}).catch(console.error);
   db.prepare('UPDATE applications SET screenshot_at=COALESCE(screenshot_at,?) WHERE id=? AND status=\'draft\'').run(Date.now(),a.id);
+ }
  }catch(err){console.error('Screenshot message handler failed:',err);}
 });
 client.on('interactionCreate',async i=>{try{if(!i.inGuild()||i.guildId!==cfg.guildId){if(i.isRepliable())await i.reply({content:'This bot is available only in the Mohgs Discord server.',ephemeral:true}).catch(()=>{});return;}
