@@ -43,6 +43,24 @@ module.exports = {
           divisionRoleId: '1572468489380167750',
           memberRoleId: '1572467647042420756'
         },
+        casual4: {
+          name: 'Casual Division 4',
+          assignmentOnly: true,
+          requirementsUrl: '',
+          captainRoleId: '1572467317257015316',
+          officerRoleId: '1572467415575695421',
+          divisionRoleId: '1574342166816489502',
+          memberRoleId: '1572467647042420756'
+        },
+        casual6: {
+          name: 'Casual Division 6',
+          assignmentOnly: true,
+          requirementsUrl: '',
+          captainRoleId: '1572467317257015316',
+          officerRoleId: '1572467415575695421',
+          divisionRoleId: '1573785638711332936',
+          memberRoleId: '1572467647042420756'
+        },
         casual: {
           name: 'Casual Guild',
           requirementsUrl: '',
